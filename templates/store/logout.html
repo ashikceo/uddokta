@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Logged Out - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="auth-form">
+        <h1>You've been logged out</h1>
+        <p style="text-align:center; margin:20px 0; color:#666;">Thank you for visiting Uddoktar Dokan. See you again soon!</p>
+        <p style="text-align:center;">
+            <a href="{% url 'login' %}" class="btn btn-primary" style="padding:10px 30px;">Login Again</a>
+        </p>
+        <p style="text-align:center; margin-top:15px;">
+            <a href="{% url 'home' %}" style="color:#e74847;">Back to Home</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

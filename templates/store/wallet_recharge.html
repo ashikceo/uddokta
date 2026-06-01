@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Wallet Recharge - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_wallet' %}">Wallet</a> / <span>Recharge</span>
+    </div>
+    <div class="page-header"><h1>Wallet Recharge Instructions</h1></div>
+
+    <p style="color:#888;margin-bottom:20px;">Use one of the following methods to recharge your wallet. After sending payment, contact the admin to confirm and credit your wallet.</p>
+
+    {% if instructions %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:20px;">
+        {% for inst in instructions %}
+        <div style="border:1px solid #eee;border-radius:8px;padding:20px;background:#fff;">
+            <h3 style="margin:0 0 10px;color:#6f42c1;font-size:16px;"><i class="fa fa-info-circle"></i> {{ inst.title }}</h3>
+            <div style="font-size:14px;line-height:1.6;color:#333;">
+                {{ inst.instruction_text|linebreaks }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:60px 0;border:1px solid #eee;border-radius:8px;">
+        <i class="fa fa-credit-card" style="font-size:48px;color:#ddd;margin-bottom:10px;"></i>
+        <p style="color:#888;">No recharge instructions available yet. Please contact the admin.</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:30px;padding:20px;background:#f8f9fa;border-radius:8px;">
+        <h4 style="margin:0 0 8px;color:#333;">Need Help?</h4>
+        <p style="color:#888;font-size:13px;">After completing the payment, please contact the platform admin with your payment details so they can credit your wallet. You can also create a <a href="{% url 'dashboard_ticket_create' %}">support ticket</a> for assistance.</p>
+    </div>
+</div>
+{% endblock %}

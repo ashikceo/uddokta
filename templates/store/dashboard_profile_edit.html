@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Profile - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Edit Profile</span>
+    </div>
+    <div class="page-header"><h1>Edit Profile</h1></div>
+    <div class="row">
+        <div class="col-4">
+            <div style="border:1px solid #eee; padding:30px; text-align:center;">
+                {% if partner.profile_image %}
+                <img src="{{ partner.profile_image.url }}" alt="{{ partner.name }}" style="width:150px; height:150px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
+                {% else %}
+                <img src="/static/img/placeholder_150x150.png" alt="{{ partner.name }}" style="width:150px; height:150px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
+                {% endif %}
+                <h3>{{ partner.name }}</h3>
+                {% if partner.is_seller %}<span class="badge" style="background:#28a745; color:#fff; padding:2px 10px; font-size:11px; display:inline-block; margin-top:5px;">Seller</span>{% endif %}
+                {% if partner.is_dealer %}<span class="badge" style="background:#007bff; color:#fff; padding:2px 10px; font-size:11px; display:inline-block; margin-top:5px;">Dealer</span>{% endif %}
+            </div>
+        </div>
+        <div class="col-8">
+            <form method="POST" enctype="multipart/form-data" style="border:1px solid #eee; padding:30px;">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" name="name" class="form-control" value="{{ partner.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" name="phone" class="form-control" value="{{ partner.phone }}">
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <p style="padding:8px 14px; background:#f5f5f5; border:1px solid #eee; border-radius:6px; color:#555; margin:0;">{{ partner.formatted_address }}</p>
+                    <p style="color:#999; font-size:11px; margin-top:4px;">Address can only be updated by site admin.</p>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" class="form-control">{{ partner.description }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Shop Style</label>
+                    <select name="shop_style" class="form-control">
+                        <option value="general" {% if partner.shop_style == 'general' %}selected{% endif %}>General Shop</option>
+                        <option value="shoe" {% if partner.shop_style == 'shoe' %}selected{% endif %}>Shoe Shop</option>
+                        <option value="medicine" {% if partner.shop_style == 'medicine' %}selected{% endif %}>Medicine Shop</option>
+                    </select>
+                    <p style="color:#888; font-size:11px; margin-top:5px;">Choose your shop type. This affects which options are available when adding products.</p>
+                </div>
+                <div class="form-group">
+                    <label>Voter ID Card</label>
+                    {% if partner.voter_id %}
+                    <div style="padding:8px; background:#f5f5f5; border:1px solid #eee; border-radius:6px; margin-bottom:4px;">
+                        <img src="{{ partner.voter_id.url }}" alt="Voter ID" style="max-width:100%; max-height:150px; border-radius:4px; display:block;">
+                    </div>
+                    {% else %}
+                    <p style="padding:8px 14px; background:#f5f5f5; border:1px solid #eee; border-radius:6px; color:#999; margin:0;">No voter ID uploaded yet.</p>
+                    {% endif %}
+                    <p style="color:#999; font-size:11px; margin-top:4px;">Voter ID can only be updated by site admin.</p>
+                </div>
+                <div class="form-group">
+                    <label>Store Logo</label>
+                    <input type="file" name="logo" class="form-control" accept="image/*">
+                    {% if partner.logo %}
+                    <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+                        <img src="{{ partner.logo.url }}" alt="Current logo" style="max-height:60px; border-radius:4px;">
+                        <label style="font-size:12px; color:#e74847; cursor:pointer;"><input type="checkbox" name="delete_logo"> Delete logo</label>
+                    </div>
+                    {% endif %}
+                    <p style="color:#888; font-size:11px; margin-top:5px;">This appears as your store's main logo in the header.</p>
+                </div>
+                <div class="form-group">
+                    <label>Profile Photo</label>
+                    <input type="file" name="profile_image" class="form-control" accept="image/*">
+                    {% if partner.profile_image %}
+                    <div style="margin-top:5px;">
+                        <label style="font-size:12px; color:#e74847; cursor:pointer;"><input type="checkbox" name="delete_profile_image"> Delete photo</label>
+                    </div>
+                    {% endif %}
+                    <p style="color:#888; font-size:11px; margin-top:5px;">Leave empty to keep current photo.</p>
+                </div>
+                <div class="form-group">
+                    <label>Store Banner (Hero)</label>
+                    <input type="file" name="banner" class="form-control" accept="image/*">
+                    {% if partner.banner %}
+                    <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+                        <img src="{{ partner.banner.url }}" alt="Current banner" style="max-width:100%; max-height:120px; border-radius:4px;">
+                        <label style="font-size:12px; color:#e74847; cursor:pointer;"><input type="checkbox" name="delete_banner"> Delete banner</label>
+                    </div>
+                    {% endif %}
+                    <p style="color:#888; font-size:11px; margin-top:5px;">Recommended size: 1200×300px. Leave empty to keep current.</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Extra Banners (for bottom section)</label>
+                    <input type="file" name="new_banners" class="form-control" accept="image/*" multiple>
+                    <p style="color:#888; font-size:11px; margin-top:5px;">You can add multiple banners. They appear in a 40:60 layout at the bottom of your store page.</p>
+                    {% if extra_banners %}
+                    <div style="margin-top:10px;">
+                        {% for b in extra_banners %}
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; padding:8px; border:1px solid #eee; border-radius:4px;">
+                            <img src="{{ b.image.url }}" alt="Banner" style="max-height:60px; border-radius:4px;">
+                            <label style="font-size:12px; color:#e74847; cursor:pointer;"><input type="checkbox" name="delete_extra_banner" value="{{ b.id }}"> Delete</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="padding:12px 40px;">Save Profile</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline" style="margin-left:10px;">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

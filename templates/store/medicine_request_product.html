@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Request Medicine Product - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Request Medicine Product</span>
+    </div>
+    <div class="page-header"><h1>Request New Medicine Product</h1></div>
+
+    <p style="color:#888;margin-bottom:20px;">Submit a request for a new medicine product to be added to the Medicine POS catalog. An admin will review and approve your request.</p>
+
+    <div style="max-width:600px;">
+        <form method="POST" style="border:1px solid #eee;border-radius:8px;padding:25px;">
+            {% csrf_token %}
+            <div style="margin-bottom:15px;">
+                <label style="display:block;font-weight:600;margin-bottom:4px;font-size:13px;">Brand Name *</label>
+                <input type="text" name="brand_name" required style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="e.g. Napa, Fexo, Rivotril">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;font-weight:600;margin-bottom:4px;font-size:13px;">Generic Name</label>
+                <input type="text" name="generic_name" style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="e.g. Paracetamol, Cetirizine">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px;">
+                <div>
+                    <label style="display:block;font-weight:600;margin-bottom:4px;font-size:13px;">Strength</label>
+                    <input type="text" name="strength" style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="e.g. 500mg">
+                </div>
+                <div>
+                    <label style="display:block;font-weight:600;margin-bottom:4px;font-size:13px;">Dosage Form</label>
+                    <input type="text" name="dosage_form" style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="e.g. Tablet, Syrup">
+                </div>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;font-weight:600;margin-bottom:4px;font-size:13px;">Price (৳) *</label>
+                <input type="number" name="price" step="0.01" min="0" required style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="e.g. 50">
+            </div>
+            <div style="margin-bottom:20px;">
+                <label style="display:block;font-weight:600;margin-bottom:4px;font-size:13px;">Description</label>
+                <textarea name="description" rows="3" style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="Any additional info for the admin..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fa fa-paper-plane"></i> Submit Request</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-outline">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

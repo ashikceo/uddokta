@@ -1,0 +1,457 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Slider -->
+<div class="container" style="margin-top:20px;">
+<div style="border:1px solid #eee; padding:0; border-radius:6px; overflow:hidden;">
+<div class="slider">
+    {% for slider in sliders %}
+    <div class="slide" style="display:none;">
+        <div class="slide-image-wrapper">
+            <img src="{{ slider.image.url }}" alt="{{ slider.title }}" onerror="this.style.display='none'">
+            <div class="slide-overlay">
+                <div class="slide-content">
+                    {% if slider.title %}
+                    <h2 class="slide-title">{{ slider.title }}</h2>
+                    {% endif %}
+                    {% if slider.subtitle %}
+                    <p class="slide-subtitle">{{ slider.subtitle }}</p>
+                    {% endif %}
+                    {% if slider.link_url %}
+                    <a href="{% if '://' in slider.link_url or slider.link_url|first == '/' %}{{ slider.link_url }}{% else %}{% url 'shop_grid' %}{% endif %}" class="btn btn-slide">Click for Partner</a>
+                    {% else %}
+                    <a href="{% url 'shop_grid' %}" class="btn btn-slide">Click for Partner</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="slide" style="display:block;">
+        <div class="slide-image-wrapper">
+            <div class="slide-overlay" style="position:relative; min-height:400px; background:linear-gradient(135deg, #e74847, #cb3231);">
+                <div class="slide-content">
+                    <h2 class="slide-title">Welcome to our Store</h2>
+                    <p class="slide-subtitle">Add sliders from the admin panel</p>
+                    <a href="{% url 'shop_grid' %}" class="btn btn-slide">Shop Now</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    <div class="slider-nav">
+        {% for slider in sliders %}
+        <span onclick="currentSlide({{ forloop.counter }})"></span>
+        {% endfor %}
+    </div>
+</div>
+</div>
+</div>
+
+<!-- Features -->
+<div class="features">
+    <div class="container">
+        <div class="row">
+            <div class="col-4">
+                <div class="feature-box feature-shipping">
+                    <i class="fa fa-truck"></i>
+                    <div class="feature-text">
+                        <h4>Free Shipping</h4>
+                        <p>Cash on Delivery</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="feature-box feature-money">
+                    <i class="fa fa-undo"></i>
+                    <div class="feature-text">
+                        <h4>Money Back</h4>
+                        <p>30 Day Money Back Guarantee.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="feature-box feature-sale">
+                    <i class="fa fa-tags"></i>
+                    <div class="feature-text">
+                        <h4>Special Sale</h4>
+                        <p>All items-sale up to 25% off</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="container">
+    <div class="row">
+        <div class="products-main">
+            <h3 class="section-title">All Over Available Product</h3>
+            <div class="product-tabs">
+                <div class="tab-nav">
+                    <button class="active" data-tab="tab-all">All</button>
+                    <button data-tab="tab-new">New</button>
+                    <button data-tab="tab-discounted">Discounted</button>
+                    <button data-tab="tab-hot">Hot Item</button>
+                </div>
+                <div id="tab-all" class="tab-content active">
+                    <div class="product-grid">
+                        {% for product in products %}
+                        {% include 'store/product_card.html' %}
+                        {% empty %}
+                        <p>No products available.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div id="tab-new" class="tab-content">
+                    <div class="product-grid">
+                        {% for product in new_products %}
+                        {% include 'store/product_card.html' %}
+                        {% empty %}
+                        <p>No new products.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div id="tab-discounted" class="tab-content">
+                    <div class="product-grid">
+                        {% for product in discounted_products %}
+                        {% include 'store/product_card.html' %}
+                        {% empty %}
+                        <p>No discounted products.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div id="tab-hot" class="tab-content">
+                    <div class="product-grid">
+                        {% for product in hot_products %}
+                        {% include 'store/product_card.html' %}
+                        {% empty %}
+                        <p>No hot items.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="products-side">
+            <h3 class="section-title">Random product list</h3>
+            <div class="product-list-vertical">
+                <div class="product-scroll-track">
+                {% for product in latest_products %}
+                <div class="product-list-item">
+                    <a href="{% url 'product_detail' product.slug %}">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                        {% else %}
+                        <img src="/static/img/placeholder_60x60.png" alt="{{ product.name }}">
+                        {% endif %}
+                    </a>
+                    <div>
+                        <a href="{% url 'product_detail' product.slug %}">{{ product.name|truncatechars:30 }}</a>
+                        <span class="price">৳ {{ product.price }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p>No products.</p>
+                {% endfor %}
+                {% for product in latest_products %}
+                <div class="product-list-item">
+                    <a href="{% url 'product_detail' product.slug %}">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                        {% else %}
+                        <img src="/static/img/placeholder_60x60.png" alt="{{ product.name }}">
+                        {% endif %}
+                    </a>
+                    <div>
+                        <a href="{% url 'product_detail' product.slug %}">{{ product.name|truncatechars:30 }}</a>
+                        <span class="price">৳ {{ product.price }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+                </div>
+            </div>
+            {% if side_banners %}
+            <div class="side-banners">
+                {% for banner in side_banners %}
+                <div class="side-banner">
+                    <a href="{% if banner.link_url %}{{ banner.link_url }}{% else %}#{% endif %}">
+                        <img src="{{ banner.image.url }}" alt="{{ banner.title }}">
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- All Partner Product -->
+<div class="container">
+    <h3 class="section-title">All Partner Product</h3>
+    <div class="product-grid">
+        {% for product in partner_products %}
+        {% include 'store/product_card.html' %}
+        {% empty %}
+        <p>No partner products available.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- BEST SELLING PRODUCT -->
+<div class="container">
+    <div class="row">
+        <div class="products-main">
+            <h3 class="section-title">BEST SELLING PRODUCT</h3>
+            <div class="product-grid">
+                {% for product in best_selling_products %}
+                {% include 'store/product_card.html' %}
+                {% empty %}
+                <p>No products available.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="products-side">
+            <h3 class="section-title">Random product list</h3>
+            <div class="product-list-vertical">
+                <div class="product-scroll-track">
+                {% for product in latest_products %}
+                <div class="product-list-item">
+                    <a href="{% url 'product_detail' product.slug %}">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                        {% else %}
+                        <img src="/static/img/placeholder_60x60.png" alt="{{ product.name }}">
+                        {% endif %}
+                    </a>
+                    <div>
+                        <a href="{% url 'product_detail' product.slug %}">{{ product.name|truncatechars:30 }}</a>
+                        <span class="price">৳ {{ product.price }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p>No products.</p>
+                {% endfor %}
+                {% for product in latest_products %}
+                <div class="product-list-item">
+                    <a href="{% url 'product_detail' product.slug %}">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                        {% else %}
+                        <img src="/static/img/placeholder_60x60.png" alt="{{ product.name }}">
+                        {% endif %}
+                    </a>
+                    <div>
+                        <a href="{% url 'product_detail' product.slug %}">{{ product.name|truncatechars:30 }}</a>
+                        <span class="price">৳ {{ product.price }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+                </div>
+            </div>
+            {% if side_banners %}
+            <div class="side-banners">
+                {% for banner in side_banners %}
+                <div class="side-banner">
+                    <a href="{% if banner.link_url %}{{ banner.link_url }}{% else %}#{% endif %}">
+                        <img src="{{ banner.image.url }}" alt="{{ banner.title }}">
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- New Arrival Blog Posts -->
+<div class="container mobile-hide-new-arrival">
+    <h3 class="section-title">New Arrival Product</h3>
+    <div class="row">
+        <div class="col-6">
+            <div class="blog-grid">
+                <div class="blog-scroll-track">
+                    {% for post in blog_posts %}
+                    <div class="blog-card">
+                        <div class="blog-image">
+                            <a href="{% url 'blog_detail' post.slug %}">
+                                {% if post.image %}
+                                <img src="{{ post.image.url }}" alt="{{ post.title }}">
+                                {% else %}
+                                <img src="/static/img/placeholder_300x200.png" alt="{{ post.title }}">
+                                {% endif %}
+                            </a>
+                        </div>
+                        <div class="blog-info">
+                            <h4><a href="{% url 'blog_detail' post.slug %}">{{ post.title }}</a></h4>
+                            <div class="meta">{{ post.created|date:"M. j, Y, g:i A" }} {{ post.views }} {{ post.comments }}</div>
+                            <p>{{ post.excerpt|default:post.content|truncatewords:20 }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>No blog posts yet.</p>
+                    {% endfor %}
+                    {% for post in blog_posts %}
+                    <div class="blog-card">
+                        <div class="blog-image">
+                            <a href="{% url 'blog_detail' post.slug %}">
+                                {% if post.image %}
+                                <img src="{{ post.image.url }}" alt="{{ post.title }}">
+                                {% else %}
+                                <img src="/static/img/placeholder_300x200.png" alt="{{ post.title }}">
+                                {% endif %}
+                            </a>
+                        </div>
+                        <div class="blog-info">
+                            <h4><a href="{% url 'blog_detail' post.slug %}">{{ post.title }}</a></h4>
+                            <div class="meta">{{ post.created|date:"M. j, Y, g:i A" }} {{ post.views }} {{ post.comments }}</div>
+                            <p>{{ post.excerpt|default:post.content|truncatewords:20 }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            {% for banner in home_banners %}
+            <div class="home-banner">
+                <a href="{% if banner.link_url %}{{ banner.link_url }}{% else %}#{% endif %}">
+                    <img src="{{ banner.image.url }}" alt="{{ banner.title }}">
+                </a>
+            </div>
+            {% empty %}
+            <div class="home-banner">
+                <a href="#">
+                    <img src="/static/img/placeholder_600x400.png" alt="Banner" style="width:100%;">
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- All Partner Lists -->
+<div class="container mobile-hide-partner-lists">
+    <div class="page-header"><h3 class="section-title">All Partner Lists</h3></div>
+    <div class="partner-scroll">
+        <div class="partner-scroll-track">
+            {% for partner in partners %}
+            <a href="{% url 'partner_detail' partner.slug %}" class="partner-card">
+                {% if partner.logo %}
+                <img src="{{ partner.logo.url }}" alt="{{ partner.name }}">
+                {% else %}
+                <img src="/static/img/placeholder_180x100.png" alt="{{ partner.name }}">
+                {% endif %}
+                <h4>{{ partner.name }}</h4>
+                <p>{{ partner.description|truncatewords:10 }}</p>
+            </a>
+            {% endfor %}
+            {% for partner in partners %}
+            <a href="{% url 'partner_detail' partner.slug %}" class="partner-card">
+                {% if partner.logo %}
+                <img src="{{ partner.logo.url }}" alt="{{ partner.name }}">
+                {% else %}
+                <img src="/static/img/placeholder_180x100.png" alt="{{ partner.name }}">
+                {% endif %}
+                <h4>{{ partner.name }}</h4>
+                <p>{{ partner.description|truncatewords:10 }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Promo Offers Full Width -->
+<div class="promo-offers-wrap">
+    <div class="promo-offers-grid">
+        <div class="promo-offer-box promo-offer-box--track">
+            <h3>Buy 2 items</h3>
+            <p>Get one for free!</p>
+        </div>
+        <div class="promo-offer-box promo-offer-box--track">
+            <h3>Daily Sales</h3>
+            <p>Today up to 45% off!</p>
+        </div>
+        <div class="promo-offer-box promo-offer-box--track">
+            <h3>NEW ARRIVAL</h3>
+            <p>Sale up to 75% off</p>
+        </div>
+        <div class="promo-offer-box promo-offer-box--track">
+            <h3>100% Authentic</h3>
+            <p>Pure & Natural</p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.promo-offer-box--track').forEach(function(box) {
+    box.addEventListener('mousemove', function(e) {
+        var rect = this.getBoundingClientRect();
+        var x = (e.clientX - rect.left) / rect.width;
+        var y = (e.clientY - rect.top) / rect.height;
+
+        this.style.transition = 'none';
+        this.style.transform = 'perspective(1000px) rotateX(' + ((y - 0.5) * -16) + 'deg) rotateY(' + ((x - 0.5) * 16) + 'deg)';
+        this.style.setProperty('--spot-x', (x * 100) + '%');
+        this.style.setProperty('--spot-y', (y * 100) + '%');
+
+        var tx = (x - 0.5) * 8;
+        var ty = (y - 0.5) * 8;
+        var h3 = this.querySelector('h3');
+        var p = this.querySelector('p');
+        if (h3) { h3.style.transition = 'none'; h3.style.transform = 'translate(' + (-tx) + 'px,' + (-ty) + 'px)'; }
+        if (p)  { p.style.transition = 'none';  p.style.transform = 'translate(' + (-tx * 0.6) + 'px,' + (-ty * 0.6) + 'px)'; }
+    });
+
+    box.addEventListener('mouseleave', function() {
+        this.style.transition = 'transform 0.4s ease-out';
+        this.style.transform = '';
+        this.style.setProperty('--spot-x', '50%');
+        this.style.setProperty('--spot-y', '50%');
+
+        var h3 = this.querySelector('h3');
+        var p = this.querySelector('p');
+        if (h3) { h3.style.transition = 'transform 0.4s ease-out'; h3.style.transform = ''; }
+        if (p)  { p.style.transition = 'transform 0.4s ease-out'; p.style.transform = ''; }
+    });
+});
+</script>
+
+<!-- All Partner Hot Products -->
+<div class="container">
+    <h3 class="section-title">All Patnar Hot Products</h3>
+    <div class="product-grid">
+        {% for product in hot_products %}
+        {% include 'store/product_card.html' %}
+        {% empty %}
+        <p>No hot products.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Brands -->
+<div class="brands">
+    <div class="container">
+        <div class="brand-slider">
+            <div class="brand-slider-track">
+                <img src="{% static 'fonten_app/images/brand1.png' %}" alt="Brand 1">
+                <img src="{% static 'fonten_app/images/brand2.png' %}" alt="Brand 2">
+                <img src="{% static 'fonten_app/images/brand3.png' %}" alt="Brand 3">
+                <img src="{% static 'fonten_app/images/brand4.png' %}" alt="Brand 4">
+                <img src="{% static 'fonten_app/images/brand5.png' %}" alt="Brand 5">
+                <img src="{% static 'fonten_app/images/brand6.png' %}" alt="Brand 6">
+                <img src="{% static 'fonten_app/images/brand7.png' %}" alt="Brand 7">
+                <img src="{% static 'fonten_app/images/brand1.png' %}" alt="Brand 1">
+                <img src="{% static 'fonten_app/images/brand2.png' %}" alt="Brand 2">
+                <img src="{% static 'fonten_app/images/brand3.png' %}" alt="Brand 3">
+                <img src="{% static 'fonten_app/images/brand4.png' %}" alt="Brand 4">
+                <img src="{% static 'fonten_app/images/brand5.png' %}" alt="Brand 5">
+                <img src="{% static 'fonten_app/images/brand6.png' %}" alt="Brand 6">
+                <img src="{% static 'fonten_app/images/brand7.png' %}" alt="Brand 7">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

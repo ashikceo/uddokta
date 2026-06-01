@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Support Tickets - Admin{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Support Tickets</span>
+    </div>
+    <div class="page-header"><h1>Support Tickets</h1></div>
+
+    <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+        <a href="{% url 'admin_ticket_list' %}" class="btn btn-outline" style="padding:6px 16px; font-size:12px; {% if not current_status %}border-color:#e74847; color:#e74847;{% endif %}">All ({{ open_count|add:in_progress_count|add:resolved_count|add:closed_count }})</a>
+        <a href="{% url 'admin_ticket_list' %}?status=open" class="btn btn-outline" style="padding:6px 16px; font-size:12px; {% if current_status == 'open' %}border-color:#dc3545; color:#dc3545;{% endif %}">Open ({{ open_count }})</a>
+        <a href="{% url 'admin_ticket_list' %}?status=in_progress" class="btn btn-outline" style="padding:6px 16px; font-size:12px; {% if current_status == 'in_progress' %}border-color:#17a2b8; color:#17a2b8;{% endif %}">In Progress ({{ in_progress_count }})</a>
+        <a href="{% url 'admin_ticket_list' %}?status=resolved" class="btn btn-outline" style="padding:6px 16px; font-size:12px; {% if current_status == 'resolved' %}border-color:#28a745; color:#28a745;{% endif %}">Resolved ({{ resolved_count }})</a>
+        <a href="{% url 'admin_ticket_list' %}?status=closed" class="btn btn-outline" style="padding:6px 16px; font-size:12px; {% if current_status == 'closed' %}border-color:#6c757d; color:#6c757d;{% endif %}">Closed ({{ closed_count }})</a>
+    </div>
+
+    {% if tickets %}
+    <div style="border:1px solid #eee; border-radius:8px; overflow:hidden;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr style="background:#f8f9fa; border-bottom:2px solid #eee;">
+                    <th style="padding:12px 16px; text-align:left; font-size:12px; color:#888;">ID</th>
+                    <th style="padding:12px 16px; text-align:left; font-size:12px; color:#888;">Subject</th>
+                    <th style="padding:12px 16px; text-align:left; font-size:12px; color:#888;">Partner</th>
+                    <th style="padding:12px 16px; text-align:left; font-size:12px; color:#888;">Priority</th>
+                    <th style="padding:12px 16px; text-align:left; font-size:12px; color:#888;">Status</th>
+                    <th style="padding:12px 16px; text-align:left; font-size:12px; color:#888;">Replies</th>
+                    <th style="padding:12px 16px; text-align:left; font-size:12px; color:#888;">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                <tr style="border-bottom:1px solid #eee; transition:background 0.1s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''">
+                    <td style="padding:14px 16px; font-size:12px; color:#888;">#{{ ticket.id }}</td>
+                    <td style="padding:14px 16px;">
+                        <a href="{% url 'admin_ticket_detail' ticket.id %}" style="color:#333; text-decoration:none; font-weight:600;">{{ ticket.subject|truncatechars:50 }}</a>
+                        <div style="font-size:11px; color:#888; margin-top:2px;">{{ ticket.description|truncatechars:60 }}</div>
+                    </td>
+                    <td style="padding:14px 16px; font-size:13px;">{{ ticket.partner.name }}</td>
+                    <td style="padding:14px 16px;">
+                        {% if ticket.priority == 'urgent' %}
+                        <span style="background:#dc3545; color:#fff; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700;">URGENT</span>
+                        {% elif ticket.priority == 'high' %}
+                        <span style="background:#ffc107; color:#333; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700;">HIGH</span>
+                        {% elif ticket.priority == 'medium' %}
+                        <span style="background:#17a2b8; color:#fff; padding:2px 8px; border-radius:4px; font-size:10px;">Medium</span>
+                        {% else %}
+                        <span style="background:#6c757d; color:#fff; padding:2px 8px; border-radius:4px; font-size:10px;">Low</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:14px 16px;">
+                        {% if ticket.status == 'open' %}
+                        <span style="background:#dc3545; color:#fff; padding:3px 12px; border-radius:10px; font-size:11px; font-weight:600;">Open</span>
+                        {% elif ticket.status == 'in_progress' %}
+                        <span style="background:#17a2b8; color:#fff; padding:3px 12px; border-radius:10px; font-size:11px; font-weight:600;">In Progress</span>
+                        {% elif ticket.status == 'resolved' %}
+                        <span style="background:#28a745; color:#fff; padding:3px 12px; border-radius:10px; font-size:11px; font-weight:600;">Resolved</span>
+                        {% else %}
+                        <span style="background:#6c757d; color:#fff; padding:3px 12px; border-radius:10px; font-size:11px; font-weight:600;">Closed</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:14px 16px; font-size:12px; color:#888;">{{ ticket.reply_count }}</td>
+                    <td style="padding:14px 16px; font-size:11px; color:#888;">{{ ticket.created|date:"M d, H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:60px 20px; border:1px solid #eee; border-radius:8px;">
+        <i class="fa fa-ticket" style="font-size:48px; color:#ddd; margin-bottom:15px;"></i>
+        <p style="color:#888; font-size:16px;">No tickets found</p>
+        <p style="color:#aaa; font-size:13px;">{% if current_status %}No tickets with this status.{% else %}All clear – no support tickets yet.{% endif %}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Side Banners - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Side Banners</span>
+    </div>
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>Side Banners</h1>
+        <a href="{% url 'dashboard_side_banner_add' %}" class="btn btn-primary"><i class="fa fa-plus"></i> Add Banner</a>
+    </div>
+    <p style="color:#888; margin-bottom:20px;">These banners appear in the sidebar below "Random product list" on your store page.</p>
+
+    {% if banners %}
+    <div style="display:grid; gap:15px;">
+        {% for banner in banners %}
+        <div style="display:flex; align-items:center; gap:15px; padding:15px; border:1px solid #eee; border-radius:8px;">
+            <div style="width:120px; flex-shrink:0;">
+                <img src="{{ banner.image.url }}" alt="{{ banner.title }}" style="width:100%; border-radius:4px; display:block;">
+            </div>
+            <div style="flex:1;">
+                <strong>{{ banner.title|default:"(no title)" }}</strong>
+                {% if banner.link_url %}
+                <p style="color:#888; font-size:12px; margin:2px 0;">{{ banner.link_url }}</p>
+                {% endif %}
+                <p style="color:#999; font-size:11px; margin:2px 0;">Order: {{ banner.order }}</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <a href="{% url 'dashboard_side_banner_edit' banner.id %}" class="btn btn-outline" style="font-size:11px; padding:6px 12px;"><i class="fa fa-edit"></i> Edit</a>
+                <form method="POST" action="{% url 'dashboard_side_banner_delete' banner.id %}" onsubmit="return confirm('Delete this banner?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" style="font-size:11px; padding:6px 12px; background:#e74847; border-color:#e74847;"><i class="fa fa-trash"></i> Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:60px 0; border:1px solid #eee; border-radius:8px;">
+        <i class="fa fa-picture-o" style="font-size:48px; color:#ddd; margin-bottom:15px;"></i>
+        <p style="color:#888;">No side banners yet.</p>
+        <a href="{% url 'dashboard_side_banner_add' %}" class="btn btn-primary" style="margin-top:10px;">Add Your First Banner</a>
+    </div>
+    {% endif %}
+    <div style="margin-top:20px;">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline"><i class="fa fa-arrow-left"></i> Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

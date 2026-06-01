@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Refunds - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Refunds</span>
+    </div>
+
+    <div class="page-header"><h1>Refund Requests</h1></div>
+
+    {% if refunds %}
+    <div style="overflow-x:auto;">
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in refunds %}
+            <tr>
+                <td>{{ r.id }}</td>
+                <td>#{{ r.order.id }}</td>
+                <td>{{ r.user.username }}</td>
+                <td>৳{{ r.amount }}</td>
+                <td style="font-size:12px;color:#666;">{{ r.reason|truncatechars:60 }}</td>
+                <td>
+                    <span style="background:{% if r.status == 'pending' %}#ffc107{% elif r.status == 'approved' %}#28a745{% else %}#dc3545{% endif %};color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;">{{ r.get_status_display }}</span>
+                </td>
+                <td style="font-size:11px;color:#888;">{{ r.created|date:"d M Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:60px 0;">
+        <i class="fa fa-undo" style="font-size:48px;color:#ddd;margin-bottom:15px;"></i>
+        <h3>No refund requests</h3>
+        <p style="color:#888;">Refund requests will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

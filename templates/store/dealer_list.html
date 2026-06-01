@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Dealers - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <span>All Dealers</span>
+    </div>
+    <div class="page-header"><h1>Dealer List</h1></div>
+    <div class="partner-grid">
+        {% for dealer in dealers %}
+        <a href="{% url 'partner_detail' dealer.slug %}" class="partner-card">
+            {% if dealer.profile_image %}
+            <img src="{{ dealer.profile_image.url }}" alt="{{ dealer.name }}">
+            {% else %}
+            <img src="/static/img/placeholder_100x100.png" alt="{{ dealer.name }}">
+            {% endif %}
+            <h4>{{ dealer.name }}</h4>
+            <p>{{ dealer.description|truncatewords:10 }}</p>
+            {% if dealer.formatted_address %}
+            <p style="font-size:12px; color:#888;"><i class="fa fa-map-marker"></i> {{ dealer.formatted_address|truncatewords:15 }}</p>
+            {% endif %}
+        </a>
+        {% empty %}
+        <p>No dealers found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

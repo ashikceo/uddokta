@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}POS Orders - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'pos_dashboard' %}">POS</a> / <span>Order History</span>
+    </div>
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1>POS Order History</h1>
+        <div>
+            <a href="{% url 'pos_dashboard' %}" class="btn btn-primary"><i class="fa fa-plus"></i> New Sale</a>
+            <a href="{% url 'pos_daily_report' %}" class="btn btn-outline"><i class="fa fa-bar-chart"></i> Report</a>
+        </div>
+    </div>
+
+    {% if orders %}
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>Invoice</th>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Payment</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td><strong>#{{ order.invoice_number }}</strong></td>
+                <td>{{ order.created|date:"d M Y h:i A" }}</td>
+                <td>
+                    {% if order.customer_name %}{{ order.customer_name }}{% else %}<span style="color:#999;">Walk-in</span>{% endif %}
+                    {% if order.customer_phone %}<br><small style="color:#888;">{{ order.customer_phone }}</small>{% endif %}
+                </td>
+                <td>{{ order.items.count }} item(s)</td>
+                <td>{{ order.get_payment_method_display }}</td>
+                <td><strong>৳{{ order.total|floatformat:0 }}</strong></td>
+                <td>
+                    {% if order.status == 'completed' %}
+                    <span style="color:#28a745;font-weight:600;">Completed</span>
+                    {% elif order.status == 'refunded' %}
+                    <span style="color:#dc3545;font-weight:600;">Refunded</span>
+                    {% else %}
+                    <span style="color:#ffc107;font-weight:600;">Cancelled</span>
+                    {% endif %}
+                </td>
+                <td style="white-space:nowrap;">
+                    <a href="{% url 'pos_order_detail' order.id %}" class="btn btn-outline" style="padding:4px 12px;font-size:11px;">View</a>
+                    <form method="POST" action="{% url 'pos_order_delete' order.id %}" style="display:inline;" onsubmit="return confirm('Delete POS order #{{ order.invoice_number }}? Items will be returned to stock.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline" style="padding:4px 12px;font-size:11px;color:#dc3545;border-color:#dc3545;">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:60px 0;border:1px solid #eee;border-radius:8px;">
+        <i class="fa fa-receipt" style="font-size:48px;color:#ddd;margin-bottom:10px;"></i>
+        <p style="color:#888;">No POS orders yet.</p>
+        <a href="{% url 'pos_dashboard' %}" class="btn btn-primary" style="margin-top:10px;">Start Selling</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

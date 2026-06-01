@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Store Sliders - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Store Sliders</span>
+    </div>
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>Store Sliders</h1>
+        <a href="{% url 'dashboard_slider_add' %}" class="btn btn-primary"><i class="fa fa-plus"></i> Add Slider</a>
+    </div>
+
+    <div style="margin-bottom:20px; display:flex; align-items:center; gap:10px;">
+        <span style="font-size:13px; color:#888;">Slider Visibility:</span>
+        <span style="font-size:13px; font-weight:600; color:{% if partner.show_slider %}#28a745{% else %}#dc3545{% endif %};">
+            {% if partner.show_slider %}ON — Visible on Store{% else %}OFF — Hidden from Store{% endif %}
+        </span>
+        <a href="{% url 'dashboard_toggle_slider' %}" class="btn btn-outline" style="padding:4px 12px; font-size:11px;">
+            {% if partner.show_slider %}Turn Off{% else %}Turn On{% endif %}
+        </a>
+    </div>
+
+    <p style="color:#888; margin-bottom:20px;">These sliders appear at the top of your store page with auto-play and arrow navigation.</p>
+
+    {% if sliders %}
+    <div style="display:grid; gap:15px;">
+        {% for slider in sliders %}
+        <div style="display:flex; align-items:center; gap:15px; padding:15px; border:1px solid #eee; border-radius:8px;">
+            <div style="width:160px; flex-shrink:0;">
+                <img src="{{ slider.image.url }}" alt="{{ slider.title }}" style="width:100%; height:90px; object-fit:cover; border-radius:4px; display:block;">
+            </div>
+            <div style="flex:1;">
+                <strong>{{ slider.title|default:"(no title)" }}</strong>
+                {% if slider.subtitle %}
+                <p style="color:#888; font-size:12px; margin:2px 0;">{{ slider.subtitle }}</p>
+                {% endif %}
+                {% if slider.link_url %}
+                <p style="color:#999; font-size:11px; margin:2px 0;">Link: {{ slider.link_url }}</p>
+                {% endif %}
+                <p style="color:#999; font-size:11px; margin:2px 0;">
+                    Order: {{ slider.order }}
+                    {% if not slider.is_active %}<span style="color:#dc3545;"> — Disabled</span>{% endif %}
+                </p>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <a href="{% url 'dashboard_slider_edit' slider.id %}" class="btn btn-outline" style="font-size:11px; padding:6px 12px;"><i class="fa fa-edit"></i> Edit</a>
+                <form method="POST" action="{% url 'dashboard_slider_delete' slider.id %}" onsubmit="return confirm('Delete this slider?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" style="font-size:11px; padding:6px 12px; background:#e74847; border-color:#e74847;"><i class="fa fa-trash"></i> Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:60px 0; border:1px solid #eee; border-radius:8px;">
+        <i class="fa fa-image" style="font-size:48px; color:#ddd; margin-bottom:15px;"></i>
+        <p style="color:#888;">No sliders yet. Add one to appear on your store page!</p>
+        <a href="{% url 'dashboard_slider_add' %}" class="btn btn-primary" style="margin-top:10px;">Add Your First Slider</a>
+    </div>
+    {% endif %}
+    <div style="margin-top:20px;">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline"><i class="fa fa-arrow-left"></i> Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

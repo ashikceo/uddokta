@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Seller List - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <span>Seller List</span>
+    </div>
+    <div class="page-header"><h1>Seller List</h1></div>
+    <div class="partner-grid">
+        {% for seller in sellers %}
+        <a href="{% url 'partner_detail' seller.slug %}" class="partner-card">
+            {% if seller.profile_image %}
+            <img src="{{ seller.profile_image.url }}" alt="{{ seller.name }}">
+            {% else %}
+            <img src="/static/img/placeholder_100x100.png" alt="{{ seller.name }}">
+            {% endif %}
+            <h4>{{ seller.name }}</h4>
+            <p>{{ seller.description|truncatewords:10 }}</p>
+            {% if seller.formatted_address %}
+            <p style="font-size:12px; color:#888;"><i class="fa fa-map-marker"></i> {{ seller.formatted_address|truncatewords:15 }}</p>
+            {% endif %}
+        </a>
+        {% empty %}
+        <p>No sellers found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

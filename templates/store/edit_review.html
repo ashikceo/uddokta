@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Review - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'product_detail' review.product.slug %}">{{ review.product.name|truncatechars:30 }}</a> / <span>Edit Review</span>
+    </div>
+    <div class="page-header"><h1>Edit Review</h1></div>
+    <div style="max-width:600px; margin:0 auto;">
+        <div style="border:1px solid #eee; padding:25px; border-radius:8px;">
+            <p style="margin-bottom:15px;"><strong>Product:</strong> <a href="{% url 'product_detail' review.product.slug %}">{{ review.product.name }}</a></p>
+            <form method="POST">
+                {% csrf_token %}
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:500;">Rating</label>
+                    <div class="star-rating">
+                        <input type="radio" name="rating" value="5" id="star5" {% if review.rating == 5 %}checked{% endif %}><label for="star5"><i class="fa fa-star"></i></label>
+                        <input type="radio" name="rating" value="4" id="star4" {% if review.rating == 4 %}checked{% endif %}><label for="star4"><i class="fa fa-star"></i></label>
+                        <input type="radio" name="rating" value="3" id="star3" {% if review.rating == 3 %}checked{% endif %}><label for="star3"><i class="fa fa-star"></i></label>
+                        <input type="radio" name="rating" value="2" id="star2" {% if review.rating == 2 %}checked{% endif %}><label for="star2"><i class="fa fa-star"></i></label>
+                        <input type="radio" name="rating" value="1" id="star1" {% if review.rating == 1 %}checked{% endif %}><label for="star1"><i class="fa fa-star"></i></label>
+                    </div>
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label for="comment" style="display:block; margin-bottom:5px; font-weight:500;">Review</label>
+                    <textarea name="comment" id="comment" rows="5" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;" required>{{ review.comment }}</textarea>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button type="submit" class="btn btn-primary">Update Review</button>
+                    <a href="{% url 'product_detail' review.product.slug %}" class="btn btn-outline">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.star-rating input { display:none; }
+.star-rating label { cursor:pointer; display:inline-block; }
+.star-rating label i { font-size:24px; color:#ccc; }
+.star-rating input:checked ~ label i,
+.star-rating label:hover i,
+.star-rating label:hover ~ label i { color:#f39c12; }
+</style>
+{% endblock %}

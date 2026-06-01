@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Reviews - Dashboard - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Reviews</span>
+    </div>
+    <div class="page-header">
+        <h1>Product Reviews</h1>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline" style="font-size:12px; padding:5px 15px;">&larr; Back to Dashboard</a>
+    </div>
+    {% if reviews %}
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Customer</th>
+                <th>Rating</th>
+                <th>Review</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for review in reviews %}
+            <tr>
+                <td><a href="{% url 'product_detail' review.product.slug %}" style="color:#e74847;">{{ review.product.name|truncatechars:40 }}</a></td>
+                <td>{{ review.user.username }}</td>
+                <td style="color:#f39c12;">
+                    {% for i in '12345'|make_list %}
+                    {% if forloop.counter <= review.rating %}
+                    <i class="fa fa-star"></i>
+                    {% else %}
+                    <i class="fa fa-star-o"></i>
+                    {% endif %}
+                    {% endfor %}
+                </td>
+                <td style="max-width:250px;">{{ review.comment|truncatechars:80 }}</td>
+                <td style="font-size:12px; color:#888;">{{ review.created|date:"d M Y" }}</td>
+                <td>
+                    <a href="{% url 'edit_review' review.id %}" class="btn btn-outline" style="padding:3px 10px; font-size:11px;"><i class="fa fa-edit"></i></a>
+                    <form method="POST" action="{% url 'delete_review' review.id %}" style="display:inline;" onsubmit="return confirm('Delete this review?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary" style="padding:3px 10px; font-size:11px; background:#e74847; border-color:#e74847;"><i class="fa fa-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center; padding:40px 0; border:1px solid #eee;">
+        <i class="fa fa-comments" style="font-size:36px; color:#ddd; margin-bottom:10px;"></i>
+        <p style="color:#888;">No reviews yet for your products.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

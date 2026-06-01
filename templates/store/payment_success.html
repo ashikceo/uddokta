@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Successful{% endblock %}
+
+{% block content %}
+<div style="text-align:center;padding:60px 20px;">
+    <div style="width:80px;height:80px;background:#4CAF50;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+        <span style="color:#fff;font-size:40px;">✓</span>
+    </div>
+    <h2>Payment Successful!</h2>
+    <p style="color:#666;margin:20px 0;">Your payment for Order #{{ order.id }} has been confirmed.</p>
+    <p><strong>Transaction ID:</strong> {{ order.tracking_id }}</p>
+    <p><strong>Amount Paid:</strong> {{ order.total }} BDT</p>
+    <a href="{% url 'order_confirmation' order.id %}" style="display:inline-block;padding:12px 30px;background:#e74847;color:#fff;text-decoration:none;border-radius:4px;margin-top:15px;">View Order Details</a>
+</div>
+{% endblock %}

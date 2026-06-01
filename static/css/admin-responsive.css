@@ -1,0 +1,34 @@
+@media (max-width: 768px) {
+    #changelist { flex-direction: column; }
+    #changelist #toolbar, #changelist #changelist-filter { width: 100%; }
+    #changelist .results { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #changelist table { min-width: 600px; }
+    #changelist table td, #changelist table th { padding: 6px 8px; font-size: 12px; }
+    #changelist table td img { height: 30px !important; width: auto !important; }
+    #changelist table td input[type="number"] { width: 50px; }
+    #changelist table td .vIntegerField { width: 50px; }
+    .aligned .form-row { display: flex; flex-direction: column; }
+    .aligned .form-row > div { margin-left: 0; }
+    .aligned .form-row label { float: none; width: auto; min-width: 0; }
+    .aligned .form-row .vTextField,
+    .aligned .form-row .vLargeTextField,
+    .aligned .form-row .vURLField { width: 100%; }
+    .aligned .form-row .field-box { margin-left: 0; float: none; width: 100%; }
+    .module h2, .module caption { font-size: 13px; padding: 8px 10px; }
+    .inline-group .tabular td.original p { display: none; }
+    .inline-group .tabular td { padding: 6px 4px; }
+    .inline-group .tabular td input[type="text"],
+    .inline-group .tabular td input[type="number"],
+    .inline-group .tabular td select { width: auto; min-width: 60px; max-width: 100px; }
+    .submit-row { flex-direction: column; gap: 5px; }
+    .submit-row input, .submit-row a { width: 100%; text-align: center; }
+    body.login #container { width: 100%; max-width: 400px; margin: 30px auto; }
+    .dashboard #content { overflow-x: auto; }
+    .dashboard .module table { min-width: 400px; }
+    .selector { flex-direction: column; width: 100%; }
+    .selector .selector-available, .selector .selector-chosen { width: 100%; float: none; }
+    .selector .selector-filter { width: 100%; }
+    .selector ul.selector-chooser { width: 100%; height: auto; margin: 8px 0; }
+    .calendar-shortcuts, .clock-module { font-size: 11px; }
+    .vDateField, .vTimeField { width: auto; max-width: 120px; }
+}

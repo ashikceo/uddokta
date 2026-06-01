@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Ticket - {{ partner.name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_tickets' %}">Support Tickets</a> / <span>Create Ticket</span>
+    </div>
+    <div class="page-header"><h1>Create Support Ticket</h1></div>
+
+    <div style="max-width:600px;">
+        <form method="POST" enctype="multipart/form-data" style="border:1px solid #eee; padding:30px; border-radius:8px;">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label>Subject *</label>
+                <input type="text" name="subject" class="form-control" required placeholder="e.g. Payment not received for Order #123" maxlength="200">
+                <p style="color:#888; font-size:11px; margin-top:3px;">Brief summary of the issue.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Description *</label>
+                <textarea name="description" class="form-control" required rows="6" placeholder="Describe your issue in detail. Include order IDs, dates, and any relevant information." style="resize:vertical;"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Screenshot / Image</label>
+                <input type="file" name="image" class="form-control" accept="image/*">
+                <p style="color:#888; font-size:11px; margin-top:3px;">Optional. Attach a screenshot or photo of the issue.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Priority</label>
+                <select name="priority" class="form-control">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                </select>
+                <p style="color:#888; font-size:11px; margin-top:3px;">How urgently do you need this resolved?</p>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="padding:12px 40px;"><i class="fa fa-paper-plane"></i> Submit Ticket</button>
+            <a href="{% url 'dashboard_tickets' %}" class="btn btn-outline" style="margin-left:10px;">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

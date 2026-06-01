@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Custom Orders - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Custom Orders</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div class="page-header" style="margin:0;"><h1>Custom Orders</h1></div>
+        <a href="{% url 'dashboard_custom_order_create' %}" class="btn btn-primary" style="padding:10px 20px;">+ Place Custom Order</a>
+    </div>
+
+    {% if custom_orders %}
+    <div style="overflow-x:auto;">
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>Buyer</th>
+                <th>Phone</th>
+                <th>Price</th>
+                <th>Qty</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for co in custom_orders %}
+            <tr>
+                <td>{{ co.id }}</td>
+                <td>{{ co.product_title|truncatechars:30 }}</td>
+                <td>{{ co.buyer_name }}</td>
+                <td>{{ co.buyer_phone }}</td>
+                <td>৳{{ co.price }}</td>
+                <td>{{ co.quantity }}</td>
+                <td>৳{{ co.price|floatformat:0 }}</td>
+                <td>
+                    {% if co.status == 'pending' %}
+                    <span style="background:#ffc107;color:#333;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:600;">Pending</span>
+                    {% elif co.status == 'approved' %}
+                    <span style="background:#28a745;color:#fff;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:600;">Approved</span>
+                    {% elif co.status == 'rejected' %}
+                    <span style="background:#dc3545;color:#fff;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:600;">Rejected</span>
+                    {% endif %}
+                </td>
+                <td>{{ co.created|date:"d M Y" }}</td>
+                <td>
+                    {% if co.status == 'pending' %}
+                    <a href="{% url 'dashboard_custom_order_edit' co.id %}" class="btn" style="background:#17a2b8;color:#fff;padding:4px 10px;border-radius:4px;font-size:11px;text-decoration:none;">Edit</a>
+                    <a href="{% url 'dashboard_custom_order_delete' co.id %}" class="btn" style="background:#dc3545;color:#fff;padding:4px 10px;border-radius:4px;font-size:11px;text-decoration:none;" onclick="return confirm('Delete this custom order?')">Delete</a>
+                    {% elif co.status == 'approved' and co.created_order %}
+                    <a href="{% url 'public_print_invoice' co.created_order.id %}" target="_blank" style="background:#28a745;color:#fff;padding:4px 10px;border-radius:4px;font-size:11px;text-decoration:none;">Invoice</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:60px 0;">
+        <i class="fa fa-file-text-o" style="font-size:48px; color:#ddd; margin-bottom:20px;"></i>
+        <h3>No custom orders yet.</h3>
+        <p style="color:#666;">Create a custom order for a buyer directly from your dashboard.</p>
+        <a href="{% url 'dashboard_custom_order_create' %}" class="btn btn-primary" style="margin-top:15px;">+ Place Custom Order</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,246 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+<style>
+  .stats { display:flex; gap:20px; margin-bottom:20px; flex-wrap:wrap; }
+  .stat-box { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px 24px; box-shadow:0 2px 8px rgba(0,0,0,0.06); flex:1; min-width:150px; }
+  .stat-box .num { font-size:26px; font-weight:700; color:#2c3e50; }
+  .stat-box .lbl { font-size:11px; color:#6c757d; text-transform:uppercase; letter-spacing:0.5px; }
+  .import-form { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:24px; }
+  .import-form h2 { font-size:16px; margin:0 0 16px; color:#2c3e50; }
+  .import-form label { font-weight:600; font-size:13px; color:#333; display:block; margin-bottom:6px; }
+  .import-form input[type=file] { display:block; margin-bottom:12px; font-size:13px; }
+  .import-form .help-text { font-size:12px; color:#6c757d; margin-bottom:12px; }
+  .import-form .submit-row { background:transparent; padding:0; margin-top:8px; border:none; }
+  table.wide { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  table.wide th { background:#f8f9fa; padding:12px 14px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; color:#6c757d; border-bottom:2px solid #dee2e6; text-align:left; }
+  table.wide td { padding:10px 14px; font-size:13px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  table.wide tr:hover td { background:#f8f9fa; }
+  .badge-green { background:#28a745; color:#fff; padding:3px 12px; border-radius:12px; font-size:10px; font-weight:600; display:inline-block; }
+  .badge-red { background:#dc3545; color:#fff; padding:3px 12px; border-radius:12px; font-size:10px; font-weight:600; display:inline-block; }
+  .badge-warning { background:#ffc107; color:#333; padding:3px 12px; border-radius:12px; font-size:10px; font-weight:600; display:inline-block; }
+  .badge-blue { background:#17a2b8; color:#fff; padding:3px 12px; border-radius:12px; font-size:10px; font-weight:600; display:inline-block; }
+  .badge-gray { background:#6c757d; color:#fff; padding:3px 12px; border-radius:12px; font-size:10px; font-weight:600; display:inline-block; }
+  .btn { border:none; border-radius:4px; padding:8px 16px; font-size:12px; cursor:pointer; font-weight:600; text-decoration:none; display:inline-block; }
+  .btn-primary { background:#e74847; color:#fff; }
+  .btn-primary:hover { background:#cb3231; }
+  .btn-secondary { background:#6c757d; color:#fff; }
+  .btn-secondary:hover { background:#5a6268; }
+  .btn-danger { background:#dc3545; color:#fff; }
+  .btn-danger:hover { background:#c82333; }
+  .back-link { margin-bottom:16px; }
+  .back-link a { color:#e74847; text-decoration:none; font-size:13px; }
+  .msg-list { margin-bottom:20px; }
+  .msg-item { padding:10px 16px; border-radius:6px; margin-bottom:8px; font-size:13px; }
+  .msg-success { background:#d4edda; color:#155724; }
+  .msg-error { background:#f8d7da; color:#721c24; }
+  .msg-warning { background:#fff3cd; color:#856404; }
+  .sample-csv { background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:12px; font-size:11px; overflow-x:auto; margin-top:12px; }
+  .sample-csv code { display:block; white-space:pre; font-family:monospace; }
+  .results-summary { display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+  .result-box { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:14px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.06); flex:1; min-width:120px; text-align:center; }
+  .result-box .num { font-size:22px; font-weight:700; }
+  .result-box .lbl { font-size:11px; color:#6c757d; text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+  .result-box.created .num { color:#28a745; }
+  .result-box.error .num { color:#dc3545; }
+  .result-box.total .num { color:#2c3e50; }
+  .detail-toggle { font-size:12px; color:#e74847; cursor:pointer; text-decoration:none; border-bottom:1px dashed; }
+  .error-list { margin-top:16px; }
+  .error-list li { font-size:12px; color:#721c24; margin-bottom:4px; }
+  .col-ref { display:grid; grid-template-columns:1fr 1fr; gap:4px 24px; font-size:12px; }
+  .col-ref .req { font-weight:600; }
+  .col-ref .opt { color:#6c757d; }
+  .col-ref .auto { color:#17a2b8; font-style:italic; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'custom_admin:index' %}">{% trans 'Home' %}</a>
+  &rsaquo; <a href="{% url 'custom_admin:store_partner_changelist' %}">Partners</a>
+  &rsaquo; Bulk Import
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <div class="back-link"><a href="{% url 'custom_admin:store_partner_changelist' %}">&larr; Back to Partners</a></div>
+  <h1>Bulk Import Partners / Dealers</h1>
+
+  {% if messages %}
+  <div class="msg-list">
+    {% for msg in messages %}
+    <div class="msg-item msg-{{ msg.tags }}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if results %}
+    <div class="results-summary">
+      <div class="result-box created">
+        <div class="num">{{ results.created }}</div>
+        <div class="lbl">Created</div>
+      </div>
+
+      <div class="result-box error">
+        <div class="num">{{ results.errors|length }}</div>
+        <div class="lbl">Errors</div>
+      </div>
+      <div class="result-box total">
+        <div class="num">{{ results.total }}</div>
+        <div class="lbl">Total Rows</div>
+      </div>
+    </div>
+
+    {% if results.errors %}
+    <div class="import-form" style="border-color:#f5c6cb;">
+      <h2 style="color:#dc3545;">Errors</h2>
+      <ul class="error-list">
+        {% for err in results.errors %}
+        <li>{{ err }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if can_undo and results.created > 0 %}
+    <div style="margin-bottom:16px;">
+      <a href="{% url 'custom_admin:partner-bulk-import-undo' %}" class="btn btn-danger" onclick="return confirm('Delete all {{ undo_count }} partner(s) created by this import? This cannot be undone.');">↩ Undo Import ({{ undo_count }})</a>
+    </div>
+    {% endif %}
+
+    {% if results.rows %}
+    <p><a class="detail-toggle" onclick="document.getElementById('row-details').style.display=document.getElementById('row-details').style.display==='none'?'table':'none';">Toggle row details</a></p>
+    <table id="row-details" class="wide" style="display:none;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results.rows %}
+        <tr>
+          <td>{{ r.row }}</td>
+          <td>{{ r.name|default:'—' }}</td>
+          <td>
+            {% if r.status == 'created' %}<span class="badge-green">Created</span>
+            {% elif r.status == 'warning' %}<span class="badge-warning">Warning</span>
+            {% else %}<span class="badge-red">Error</span>
+            {% endif %}
+          </td>
+          <td style="color:#6c757d;font-size:12px;">{{ r.message }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    <div style="margin-top:16px;">
+      <a href="{% url 'custom_admin:partner-bulk-import' %}" class="btn btn-primary">Import Another File</a>
+      <a href="{% url 'custom_admin:store_partner_changelist' %}" class="btn btn-secondary">View Partners</a>
+    </div>
+
+  {% else %}
+
+    <div class="import-form">
+      <h2>Upload File</h2>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="file">Choose CSV or Excel file</label>
+        <input type="file" name="file" id="file" accept=".csv,.xlsx,.xls" required>
+        <p class="help-text">
+          Supports <strong>CSV</strong> (.csv) and <strong>Excel</strong> (.xlsx, .xls) formats.<br>
+          The <strong>Upazila</strong> column is the primary geographic key — when blank fields are auto-generated from it.
+        </p>
+        <div class="submit-row">
+          <input type="submit" value="Upload & Import" class="btn btn-primary default">
+        </div>
+      </form>
+    </div>
+
+    <div class="import-form">
+      <h2>30-Column Schema Reference</h2>
+      <p style="font-size:13px;color:#333;margin-bottom:8px;">
+        <span class="badge-green">Auto</span> = auto-generated if left blank &nbsp;
+        <span class="badge-blue">Opt</span> = optional &nbsp;
+        <span class="badge-red">Req</span> = recommended (Name auto-fills from Upazila)
+      </p>
+      <div class="col-ref">
+        {% for col in columns %}
+        <div>{% if forloop.counter0 < 30 %}<span>{% endif %}{% if col.auto %}<span class="auto">{{ forloop.counter }}. {{ col.name }}</span>{% elif col.required %}<span class="req">{{ forloop.counter }}. {{ col.name }}</span>{% else %}<span class="opt">{{ forloop.counter }}. {{ col.name }}</span>{% endif %}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="import-form">
+      <h2>Column Details</h2>
+      <table class="wide" style="box-shadow:none;">
+        <thead>
+          <tr>
+            <th style="width:30px;">#</th>
+            <th>Column Header</th>
+            <th>Type</th>
+            <th>Rule</th>
+            <th>Default / Auto-fill</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td><code>User</code></td><td>Number</td><td>Optional</td><td>Left blank (assign later)</td></tr>
+          <tr><td>1</td><td><code>Name</code></td><td>String</td><td>Auto-filled if blank</td><td>Uses Upazila name</td></tr>
+          <tr><td>2</td><td><code>Slug</code></td><td>String</td><td>Auto-generated if blank</td><td><code>{Upazila}-Upazila-{District}-District</code></td></tr>
+          <tr><td>3</td><td><code>Logo</code></td><td>String</td><td>Auto-filled if blank</td><td><code>partner_logos/{N}.png</code></td></tr>
+          <tr><td>4</td><td><code>Profile Image</code></td><td>String</td><td>Auto-filled if blank</td><td><code>profile_pics/1_{N}.png</code></td></tr>
+          <tr><td>5</td><td><code>Banner</code></td><td>-</td><td>Optional</td><td>Null</td></tr>
+          <tr><td>6</td><td><code>Description</code></td><td>String</td><td>Auto-generated if blank</td><td><code>{উপজেলা} উপজেলা, {জেলা} জেলা</code></td></tr>
+          <tr><td>7</td><td><code>Phone</code></td><td>String</td><td>Auto-filled if blank</td><td><code>1000000000</code></td></tr>
+          <tr><td>8</td><td><code>Address</code></td><td>-</td><td>Optional</td><td>Null</td></tr>
+          <tr><td>9</td><td><code>Street / Village / House / Flat</code></td><td>String</td><td>Optional</td><td>Blank</td></tr>
+          <tr><td>10</td><td><code>Division</code></td><td>String</td><td>Auto-looked up from District</td><td>e.g. "Dhaka Division"</td></tr>
+          <tr><td>11</td><td><code>District</code></td><td>String</td><td>Must include " District" suffix</td><td>e.g. "Dhaka District"</td></tr>
+          <tr><td>12</td><td><code>Upazila</code></td><td>String</td><td>Primary geographic key</td><td>e.g. "Dhamrai" (no "Upazila")</td></tr>
+          <tr><td>13</td><td><code>Voter Id Card</code></td><td>-</td><td>Optional</td><td>Null (image upload)</td></tr>
+          <tr><td>14</td><td><code>Is Dealer</code></td><td>Yes/No</td><td>Yes/No, 1/0, true/false</td><td>No</td></tr>
+          <tr><td>15</td><td><code>Is Seller</code></td><td>Yes/No</td><td>Same</td><td>Yes</td></tr>
+          <tr><td>16</td><td><code>Is Union Agent</code></td><td>Yes/No</td><td>Same</td><td>No</td></tr>
+          <tr><td>17</td><td><code>Is Active</code></td><td>Yes/No</td><td>Same</td><td>Yes</td></tr>
+          <tr><td>18</td><td><code>Dealer (Parent)</code></td><td>String</td><td>Optional — existing partner name</td><td>Case-insensitive lookup by name</td></tr>
+          <tr><td>19</td><td><code>Meta Title</code></td><td>String</td><td>Optional</td><td>Blank</td></tr>
+          <tr><td>20</td><td><code>Meta Description</code></td><td>String</td><td>Optional</td><td>Blank</td></tr>
+          <tr><td>21</td><td><code>Show Products On Website</code></td><td>Yes/No</td><td>Same</td><td>Yes</td></tr>
+          <tr><td>22</td><td><code>Show "All Over Available Product" Section On Store Page</code></td><td>Yes/No</td><td>Same</td><td>Yes</td></tr>
+          <tr><td>23</td><td><code>Show "Random Product List" Section On Store Page</code></td><td>Yes/No</td><td>Same</td><td>Yes</td></tr>
+          <tr><td>24</td><td><code>Show Slider On Store Page</code></td><td>Yes/No</td><td>Same</td><td>Yes</td></tr>
+          <tr><td>25</td><td><code>Shop Style</code></td><td>String</td><td><code>general</code>, <code>shoe</code>, <code>medicine</code></td><td>general</td></tr>
+          <tr><td>26</td><td><code>Medicine Catalog Access</code></td><td>Yes/No</td><td>Same</td><td>No</td></tr>
+          <tr><td>27</td><td><code>Medicine Pos Enabled</code></td><td>Yes/No</td><td>Same</td><td>No</td></tr>
+          <tr><td>28</td><td><code>Created</code></td><td>DateTime</td><td>Format: <code>YYYY-MM-DD HH:MM:SS.fff</code></td><td>Current timestamp</td></tr>
+          <tr><td>29</td><td><code>Updated</code></td><td>DateTime</td><td>Same</td><td>Current timestamp</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="font-size:13px;margin:16px 0 8px;color:#2c3e50;">Sample CSV</h3>
+      <div class="sample-csv">
+        <code>Name,Upazila,District,Division,Phone,Shop Style,Is Dealer,Is Seller,Is Union Agent,Is Active,Show Products On Website,Show "All Over Available Product" Section On Store Page,Show "Random Product List" Section On Store Page,Show Slider On Store Page,Medicine Catalog Access,Medicine Pos Enabled
+      ,Dhamrai,Dhaka District,,01711111111,general,No,Yes,No,Yes,Yes,Yes,Yes,Yes,No,No
+      ,Savar,Dhaka District,,01722222222,general,Yes,Yes,No,Yes,Yes,Yes,Yes,Yes,No,No
+      ,Cox's Bazar Sadar,Cox's Bazar District,,01733333333,general,No,Yes,No,Yes,Yes,Yes,Yes,Yes,No,No
+      ,Mymensingh Sadar,Mymensingh District,,01744444444,medicine,No,Yes,No,Yes,Yes,Yes,Yes,Yes,Yes,No
+      ,Sylhet Sadar,Sylhet District,,01755555555,general,Yes,Yes,Yes,Yes,Yes,Yes,Yes,Yes,No,No</code>
+      </div>
+      <p style="font-size:12px;color:#6c757d;margin-top:8px;">
+        <strong>💡 Tip:</strong> Only <strong>Upazila</strong> and <strong>District</strong> columns are essential. Name auto-fills from Upazila, Division auto-looks up from District, Slug/Description/Logo/Profile Image auto-generate.
+      </p>
+      <div class="sample-csv" style="margin-top:8px;background:#fff3cd;border-color:#ffc107;">
+        <strong>⚠️ Note:</strong> Every row creates a new partner record, even if the name already exists. Images (logo, banner, voter ID) are text-only path references — actual files must be uploaded separately.
+      </div>
+    </div>
+
+  {% endif %}
+</div>
+{% endblock %}

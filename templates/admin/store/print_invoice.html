@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice - Order #{{ order.id }}</title>
+    <style>
+        @page { size: A4; margin: 15mm; }
+        body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 12px; color: #333; line-height: 1.5; margin: 0; padding: 20px; }
+        .header { text-align: center; border-bottom: 3px solid #e74847; padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #e74847; font-size: 22px; }
+        .header p { margin: 3px 0; color: #666; font-size: 11px; }
+        .invoice-title { text-align: center; font-size: 18px; font-weight: 700; margin: 20px 0; color: #333; text-transform: uppercase; letter-spacing: 2px; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .info-table td { padding: 5px 8px; vertical-align: top; }
+        .info-table td:first-child { font-weight: 600; width: 140px; color: #555; }
+        .badge { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-pending { background: #ffc107; color: #333; }
+        .badge-processing { background: #17a2b8; color: #fff; }
+        .badge-completed { background: #28a745; color: #fff; }
+        .badge-cancelled { background: #dc3545; color: #fff; }
+        .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .items-table th { background: #e74847; color: #fff; padding: 10px 12px; text-align: left; font-size: 12px; }
+        .items-table td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+        .items-table tr:nth-child(even) { background: #f9f9f9; }
+        .total-section { text-align: right; margin-top: 20px; padding-top: 15px; border-top: 2px solid #333; }
+        .total-section p { margin: 3px 0; font-size: 13px; }
+        .total-section .grand-total { font-size: 18px; font-weight: 700; color: #e74847; }
+        .footer { text-align: center; margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 10px; color: #999; }
+        .print-btn { text-align: center; margin: 20px 0; }
+        .print-btn button { padding: 12px 30px; background: #333; color: #fff; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
+        @media print {
+            .print-btn { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-btn">
+        <button onclick="window.print()">Print Invoice</button>
+    </div>
+
+    <div class="header">
+        <h1>{{ site_name|default:'Uddoktar Dokan' }}</h1>
+        <p>{{ site_tagline|default:'উদ্যোক্তার বাজার' }}</p>
+        <p>{{ site_phone|default:'' }} | {{ site_address_bd|default:'' }}</p>
+    </div>
+
+    <div class="invoice-title">Invoice</div>
+
+    <table class="info-table">
+        <tr><td>Order #</td><td>{{ order.id }}</td></tr>
+        <tr><td>Date</td><td>{{ order.created|date:'d M Y, h:i A' }}</td></tr>
+        <tr><td>Customer</td><td>{{ order.name }}</td></tr>
+        <tr><td>Phone</td><td>{{ order.phone }}</td></tr>
+        <tr><td>Address</td><td>{{ order.address }}</td></tr>
+        <tr><td>Payment</td><td>{{ order.payment_method }}</td></tr>
+        <tr><td>Payment Status</td><td><span class="badge badge-{{ order.payment_status }}">{{ order.get_payment_status_display }}</span></td></tr>
+        <tr><td>Order Status</td><td><span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span></td></tr>
+        {% if order.tracking_id %}<tr><td>Tracking ID</td><td>{{ order.tracking_id }}</td></tr>{% endif %}
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>৳{{ item.price }}</td>
+                <td>৳{{ item.price|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="total-section">
+        <p>Subtotal: ৳{{ order.subtotal|floatformat:2 }}</p>
+        {% if order.discount_amount %}
+        <p>Discount: -৳{{ order.discount_amount|floatformat:2 }}</p>
+        {% endif %}
+        {% if order.fees_total %}
+        <p>Fees: ৳{{ order.fees_total|floatformat:2 }}</p>
+        {% endif %}
+        <p class="grand-total">Total: ৳{{ order.total|floatformat:2 }}</p>
+    </div>
+
+    <div class="footer">
+        <p>Thank you for your business!</p>
+        <p>{{ site_name|default:'Uddoktar Dokan' }} | {{ site_phone|default:'' }}</p>
+    </div>
+</body>
+</html>

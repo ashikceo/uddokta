@@ -1,0 +1,143 @@
+{% extends "admin/change_form.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.management-links { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+.management-links a { display:flex; align-items:center; gap:6px; padding:10px 16px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:500; border:1px solid #dee2e6; background:#fff; color:#333; transition:all 0.15s; }
+.management-links a:hover { border-color:#6f42c1; box-shadow:0 2px 8px rgba(111,66,193,0.1); transform:translateY(-1px); }
+.management-links a i { font-size:16px; }
+.management-links a.primary { background:#6f42c1; color:#fff; border-color:#6f42c1; }
+.management-links a.primary:hover { background:#5a32a3; }
+.management-links a.success { background:#28a745; color:#fff; border-color:#28a745; }
+.management-links a.success:hover { background:#218838; }
+.management-links a.warning { background:#ffc107; color:#333; border-color:#ffc107; }
+.management-links a.info { background:#17a2b8; color:#fff; border-color:#17a2b8; }
+.management-links a.danger { background:#dc3545; color:#fff; border-color:#dc3545; }
+.management-links a.outline-primary { border-color:#6f42c1; color:#6f42c1; }
+.management-links a.outline-primary:hover { background:#6f42c1; color:#fff; }
+.quick-stats { display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap; }
+.quick-stat { flex:1; min-width:120px; background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:14px 18px; text-align:center; }
+.quick-stat .num { font-size:22px; font-weight:700; color:#6f42c1; }
+.quick-stat .lbl { font-size:11px; color:#6c757d; text-transform:uppercase; letter-spacing:0.3px; margin-top:4px; }
+.activation-form { background:#f8f9fa; border:1px solid #dee2e6; border-radius:8px; padding:20px; margin-bottom:20px; }
+.activation-form h3 { margin:0 0 12px; font-size:15px; }
+.activation-form .form-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.activation-form input[type=number] { width:100px; padding:6px 10px; border:1px solid #dee2e6; border-radius:4px; font-size:14px; }
+.activation-form input[type=submit] { padding:8px 20px; background:#28a745; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px; font-weight:600; }
+.activation-form input[type=submit]:hover { background:#218838; }
+</style>
+{% endblock %}
+
+{% block object-tools-items %}
+<li>
+    <a href="{% url 'custom_admin:medicine-partner-access' %}" class="btn" style="background:#6f42c1;color:#fff;">
+        <i class="fa fa-shield"></i> Partner Access
+    </a>
+</li>
+<li>
+    <a href="{% url 'custom_admin:medicine-pending-requests' %}" class="btn" style="background:#dc3545;color:#fff;">
+        <i class="fa fa-clock-o"></i> Pending Requests
+    </a>
+</li>
+{{ block.super }}
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="management-links">
+        <a href="{% url 'custom_admin:store_medicinesubscription_changelist' %}" class="primary">
+            <i class="fa fa-arrow-left"></i> Back to Subscriptions
+        </a>
+        <a href="{{ partner_edit_url }}" class="outline-primary">
+            <i class="fa fa-user"></i> Edit Partner Profile
+        </a>
+        <a href="{{ wallet_url }}" class="outline-primary">
+            <i class="fa fa-credit-card"></i> View Wallet
+        </a>
+        <a href="{{ products_url }}" class="outline-primary">
+            <i class="fa fa-medkit"></i> Medicine Products ({{ medicine_products }})
+        </a>
+        <a href="{{ orders_url }}" class="outline-primary">
+            <i class="fa fa-receipt"></i> POS Orders ({{ medicine_orders }})
+        </a>
+        <a href="{{ medicine_access_url }}" class="outline-primary">
+            <i class="fa fa-shield"></i> Manage Access
+        </a>
+        <a href="{{ pending_requests_url }}" class="outline-primary">
+            <i class="fa fa-clock-o"></i> Pending Requests
+        </a>
+        <a href="{{ recharge_instructions_url }}" class="outline-primary">
+            <i class="fa fa-info-circle"></i> Recharge Instructions
+        </a>
+        <a href="{% url 'custom_admin:store_platformbalance_changelist' %}" class="outline-primary">
+            <i class="fa fa-bank"></i> Platform Balance
+        </a>
+        <a href="{% url 'custom_admin:store_partnerwallet_changelist' %}" class="outline-primary">
+            <i class="fa fa-wallet"></i> All Wallets
+        </a>
+        <a href="{% url 'custom_admin:store_medicineproduct_changelist' %}" class="outline-primary">
+            <i class="fa fa-list"></i> All Medicine Products
+        </a>
+        <a href="{% url 'custom_admin:store_medicineposorder_changelist' %}" class="outline-primary">
+            <i class="fa fa-receipt"></i> All POS Orders
+        </a>
+    </div>
+
+    <div class="quick-stats">
+        <div class="quick-stat">
+            <div class="num">{{ original.get_status_display }}</div>
+            <div class="lbl">Status</div>
+        </div>
+        {% if original.trial_ends_at %}
+        <div class="quick-stat">
+            <div class="num">{{ original.trial_ends_at|date:"d M" }}</div>
+            <div class="lbl">Trial Ends</div>
+        </div>
+        {% endif %}
+        {% if original.current_period_end %}
+        <div class="quick-stat">
+            <div class="num">{{ original.current_period_end|date:"d M" }}</div>
+            <div class="lbl">Period Ends</div>
+        </div>
+        {% endif %}
+        {% if original.last_payment_at %}
+        <div class="quick-stat">
+            <div class="num">{{ original.last_payment_at|date:"d M" }}</div>
+            <div class="lbl">Last Payment</div>
+        </div>
+        {% endif %}
+        {% if wallet %}
+        <div class="quick-stat">
+            <div class="num">৳{{ wallet.balance }}</div>
+            <div class="lbl">Wallet Balance</div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if original.status != 'active' %}
+    <div class="activation-form">
+        <h3><i class="fa fa-check-circle" style="color:#28a745;"></i> Manually Activate Subscription</h3>
+        <p style="font-size:12px;color:#6c757d;margin-bottom:12px;">Use this to activate the subscription after manual payment from the partner. Set the number of days for the subscription period.</p>
+        <form method="get" action="{% url 'admin:activate-subscription' original.id %}">
+            <div class="form-row">
+                <label for="days">Activate for</label>
+                <input type="number" name="days" id="days" value="30" min="1" max="365">
+                <label>days</label>
+                <input type="submit" value="Activate Subscription">
+                <a href="{% url 'admin:activate-subscription' original.id %}?days=7" class="btn" style="background:#6f42c1;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;">7 days</a>
+                <a href="{% url 'admin:activate-subscription' original.id %}?days=15" class="btn" style="background:#17a2b8;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;">15 days</a>
+                <a href="{% url 'admin:activate-subscription' original.id %}?days=30" class="btn" style="background:#28a745;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;">1 month</a>
+                <a href="{% url 'admin:activate-subscription' original.id %}?days=60" class="btn" style="background:#17a2b8;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;">2 months</a>
+                <a href="{% url 'admin:activate-subscription' original.id %}?days=90" class="btn" style="background:#6f42c1;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;">3 months</a>
+                <a href="{% url 'admin:activate-subscription' original.id %}?days=180" class="btn" style="background:#dc3545;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;">6 months</a>
+                <a href="{% url 'admin:activate-subscription' original.id %}?days=365" class="btn" style="background:#2c3e50;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;">1 year</a>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    {{ block.super }}
+</div>
+{% endblock %}

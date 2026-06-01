@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if slider %}Edit Slider{% else %}Add Slider{% endif %} - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_slider_list' %}">Sliders</a> / <span>{% if slider %}Edit{% else %}Add{% endif %}</span>
+    </div>
+    <div class="page-header"><h1>{% if slider %}Edit Slider{% else %}Add Slider{% endif %}</h1></div>
+
+    <div style="max-width:600px;">
+        <form method="POST" enctype="multipart/form-data" style="border:1px solid #eee; padding:30px; border-radius:8px;">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" name="title" class="form-control" value="{{ slider.title|default:'' }}" placeholder="e.g. Summer Sale">
+                <p style="color:#888; font-size:11px; margin-top:3px;">Optional. Displayed as heading overlay on the slide.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Subtitle</label>
+                <input type="text" name="subtitle" class="form-control" value="{{ slider.subtitle|default:'' }}" placeholder="e.g. Get up to 50% off">
+                <p style="color:#888; font-size:11px; margin-top:3px;">Optional. Smaller text below the title.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Image{% if slider %}{% else %} *{% endif %}</label>
+                <input type="file" name="image" class="form-control" accept="image/*" {% if not slider %}required{% endif %}>
+                {% if slider and slider.image %}
+                <div style="margin-top:10px;">
+                    <img src="{{ slider.image.url }}" alt="Current" style="max-width:100%; max-height:180px; border-radius:4px; object-fit:cover;">
+                    <label style="display:block; font-size:12px; color:#e74847; margin-top:5px; cursor:pointer;"><input type="checkbox" name="delete_image"> Delete current image</label>
+                </div>
+                {% endif %}
+                <p style="color:#888; font-size:11px; margin-top:3px;">Recommended: 1920x500px for best display.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Link URL</label>
+                <input type="url" name="link_url" class="form-control" value="{{ slider.link_url|default:'' }}" placeholder="https://example.com">
+                <p style="color:#888; font-size:11px; margin-top:3px;">Optional. When empty, the button is hidden.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Button Text</label>
+                <input type="text" name="button_text" class="form-control" value="{{ slider.button_text|default:'Click for Partner' }}" placeholder="Click for Partner">
+                <p style="color:#888; font-size:11px; margin-top:3px;">Text shown on the slide button. Only visible if Link URL is set.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Slide Height (px)</label>
+                <input type="number" name="max_height" class="form-control" value="{{ slider.max_height|default:'400' }}" min="200" max="500">
+                <p style="color:#888; font-size:11px; margin-top:3px;">Image height in pixels. Max 500px. Default 400px.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Order</label>
+                <input type="number" name="order" class="form-control" value="{{ slider.order|default:'0' }}" min="0">
+                <p style="color:#888; font-size:11px; margin-top:3px;">Lower numbers appear first.</p>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="is_active" {% if not slider or slider.is_active %}checked{% endif %}> Active
+                </label>
+                <p style="color:#888; font-size:11px; margin-top:3px;">Uncheck to hide this slider without deleting it.</p>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="padding:12px 40px;">{% if slider %}Save Changes{% else %}Add Slider{% endif %}</button>
+            <a href="{% url 'dashboard_slider_list' %}" class="btn btn-outline" style="margin-left:10px;">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

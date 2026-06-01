@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Menu Manager - {{ partner.name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Menu Manager</span>
+    </div>
+    <div class="page-header">
+        <h1>Menu Manager</h1>
+        <a href="{% url 'dashboard_menu_add' %}" class="btn btn-primary"><i class="fa fa-plus"></i> Add Menu Item</a>
+    </div>
+
+    <p style="color:#666; margin-bottom:20px;">Manage the navigation menu for <strong>{{ partner.name }}</strong> store. Items with no URL act as parent menus with dropdown sub-menus.</p>
+
+    {% if items %}
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>Order</th>
+                <th>Title</th>
+                <th>URL</th>
+                <th>Type</th>
+                <th>Sub-items</th>
+                <th>Active</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.order }}</td>
+                <td><strong>{{ item.title }}</strong></td>
+                <td style="font-size:12px; color:#888; max-width:200px; word-break:break-all;">{{ item.url|default:'—' }}</td>
+                <td>{{ item.get_url_type_display }}</td>
+                <td>
+                    {% if item.children.all %}
+                    <ul style="margin:0; padding-left:15px; font-size:12px; color:#666;">
+                        {% for child in item.children.all %}
+                        <li>{{ child.title }} {% if child.url %}<span style="color:#999;">({{ child.url }})</span>{% endif %}</li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <span style="color:#999;">—</span>
+                    {% endif %}
+                </td>
+                <td>{% if item.is_active %}<i class="fa fa-check" style="color:#28a745;"></i>{% else %}<i class="fa fa-times" style="color:#e74847;"></i>{% endif %}</td>
+                <td>
+                    <a href="{% url 'dashboard_menu_edit' item.id %}" class="btn btn-outline" style="padding:3px 10px; font-size:11px;"><i class="fa fa-edit"></i> Edit</a>
+                    <a href="{% url 'dashboard_menu_delete' item.id %}" class="btn btn-primary" style="padding:3px 10px; font-size:11px; background:#e74847; border-color:#e74847;" onclick="return confirm('Delete this menu item and all its sub-items?');"><i class="fa fa-trash"></i> Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center; padding:60px 0; border:1px solid #eee;">
+        <i class="fa fa-bars" style="font-size:48px; color:#ddd; margin-bottom:15px;"></i>
+        <p style="color:#888; margin-bottom:20px;">No custom menu items yet. Your store is using the site-wide navigation.</p>
+        <a href="{% url 'dashboard_menu_add' %}" class="btn btn-primary"><i class="fa fa-plus"></i> Add First Menu Item</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

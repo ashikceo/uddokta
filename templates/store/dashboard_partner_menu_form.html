@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if item %}Edit{% else %}Add{% endif %} Menu Item - {{ partner.name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_menu_list' %}">Menu Manager</a> / <span>{% if item %}Edit{% else %}Add{% endif %} Menu Item</span>
+    </div>
+    <div class="page-header"><h1>{% if item %}Edit{% else %}Add{% endif %} Menu Item</h1></div>
+
+    {% if error %}
+    <div class="alert alert-error" style="color:#e74847; border:1px solid #e74847; padding:10px; margin-bottom:15px;">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" style="max-width:600px;">
+        {% csrf_token %}
+        <div style="margin-bottom:15px;">
+            <label style="display:block; font-weight:600; margin-bottom:5px;">Title *</label>
+            <input type="text" name="title" value="{{ item.title|default:'' }}" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label style="display:block; font-weight:600; margin-bottom:5px;">URL <span style="font-weight:400; color:#888;">(leave blank for parent menu with sub-menus)</span></label>
+            <input type="text" name="url" value="{{ item.url|default:'' }}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label style="display:block; font-weight:600; margin-bottom:5px;">URL Type</label>
+            <select name="url_type" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                <option value="named_url" {% if item.url_type == 'named_url' %}selected{% endif %}>Named URL (e.g. 'home', 'shop_grid')</option>
+                <option value="path" {% if item.url_type == 'path' %}selected{% endif %}>Path (e.g. '/shop/')</option>
+            </select>
+        </div>
+        <div style="margin-bottom:15px;">
+            <label style="display:block; font-weight:600; margin-bottom:5px;">Parent Menu <span style="font-weight:400; color:#888;">(leave empty for top-level item)</span></label>
+            <select name="parent" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                <option value="">— Top Level —</option>
+                {% for p in parents %}
+                <option value="{{ p.id }}" {% if item.parent.id == p.id %}selected{% endif %}>{{ p.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="margin-bottom:15px;">
+            <label style="display:block; font-weight:600; margin-bottom:5px;">Order</label>
+            <input type="number" name="order" value="{{ item.order|default:0 }}" min="0" style="width:100px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+        </div>
+        <div style="margin-bottom:20px;">
+            <label>
+                <input type="checkbox" name="is_active" {% if item.is_active|default:True %}checked{% endif %}>
+                <span style="font-weight:600;">Active</span>
+            </label>
+        </div>
+        <div>
+            <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> {% if item %}Update{% else %}Add{% endif %} Menu Item</button>
+            <a href="{% url 'dashboard_menu_list' %}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

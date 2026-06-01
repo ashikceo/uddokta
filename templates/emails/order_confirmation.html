@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation - #{{ order.id }}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #1a73e8; padding: 30px 40px; text-align: center;">
+              <h1 style="color: #ffffff; font-size: 28px; margin: 0; font-weight: 700;">Uddoktar Dokan</h1>
+            </td>
+          </tr>
+          <!-- Subject -->
+          <tr>
+            <td style="padding: 30px 40px 10px;">
+              <h1 style="color: #1a73e8; font-size: 22px; margin: 0 0 20px; font-weight: 600;">Order Confirmation - #{{ order.id }}</h1>
+              <p style="color: #333333; font-size: 16px; line-height: 1.5; margin: 0 0 6px;">Dear {{ order.name }},</p>
+              <p style="color: #333333; font-size: 16px; line-height: 1.5; margin: 0 0 20px;">Your order has been placed successfully!</p>
+            </td>
+          </tr>
+          <!-- Order Details Table -->
+          <tr>
+            <td style="padding: 0 40px 20px;">
+              <h2 style="color: #333333; font-size: 18px; margin: 0 0 12px; font-weight: 600;">Order Details</h2>
+              <table role="presentation" width="100%" cellpadding="10" cellspacing="0" style="border-collapse: collapse; font-size: 14px;">
+                <tr style="background-color: #f8f9fa;">
+                  <th style="border: 1px solid #dddddd; text-align: left; color: #555555; font-weight: 600; padding: 10px 14px;">Order #</th>
+                  <td style="border: 1px solid #dddddd; color: #333333; padding: 10px 14px;">{{ order.id }}</td>
+                </tr>
+                <tr>
+                  <th style="border: 1px solid #dddddd; text-align: left; color: #555555; font-weight: 600; padding: 10px 14px; background-color: #f8f9fa;">Date</th>
+                  <td style="border: 1px solid #dddddd; color: #333333; padding: 10px 14px;">{{ order.created }}</td>
+                </tr>
+                <tr>
+                  <th style="border: 1px solid #dddddd; text-align: left; color: #555555; font-weight: 600; padding: 10px 14px; background-color: #f8f9fa;">Total</th>
+                  <td style="border: 1px solid #dddddd; color: #333333; padding: 10px 14px;">${{ order.total }}</td>
+                </tr>
+                <tr>
+                  <th style="border: 1px solid #dddddd; text-align: left; color: #555555; font-weight: 600; padding: 10px 14px; background-color: #f8f9fa;">Payment Method</th>
+                  <td style="border: 1px solid #dddddd; color: #333333; padding: 10px 14px;">{{ order.payment_method }}</td>
+                </tr>
+                <tr>
+                  <th style="border: 1px solid #dddddd; text-align: left; color: #555555; font-weight: 600; padding: 10px 14px; background-color: #f8f9fa;">Status</th>
+                  <td style="border: 1px solid #dddddd; color: #333333; padding: 10px 14px;">{{ order.status }}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Items Table -->
+          <tr>
+            <td style="padding: 0 40px 20px;">
+              <h2 style="color: #333333; font-size: 18px; margin: 0 0 12px; font-weight: 600;">Items</h2>
+              <table role="presentation" width="100%" cellpadding="10" cellspacing="0" style="border-collapse: collapse; font-size: 14px;">
+                <thead>
+                  <tr style="background-color: #1a73e8;">
+                    <th style="border: 1px solid #1a73e8; color: #ffffff; font-weight: 600; padding: 10px 14px; text-align: left;">Product</th>
+                    <th style="border: 1px solid #1a73e8; color: #ffffff; font-weight: 600; padding: 10px 14px; text-align: center;">Qty</th>
+                    <th style="border: 1px solid #1a73e8; color: #ffffff; font-weight: 600; padding: 10px 14px; text-align: right;">Price</th>
+                    <th style="border: 1px solid #1a73e8; color: #ffffff; font-weight: 600; padding: 10px 14px; text-align: right;">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in order.items.all %}
+                  <tr>
+                    <td style="border: 1px solid #dddddd; color: #333333; padding: 10px 14px;">{{ item.product.name }}</td>
+                    <td style="border: 1px solid #dddddd; color: #333333; padding: 10px 14px; text-align: center;">{{ item.qty }}</td>
+                    <td style="border: 1px solid #dddddd; color: #333333; padding: 10px 14px; text-align: right;">${{ item.price }}</td>
+                    <td style="border: 1px solid #dddddd; color: #333333; padding: 10px 14px; text-align: right;">${{ item.total }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot>
+                  <tr style="background-color: #f8f9fa;">
+                    <td colspan="3" style="border: 1px solid #dddddd; color: #333333; padding: 10px 14px; text-align: right; font-weight: 600;">Total</td>
+                    <td style="border: 1px solid #dddddd; color: #1a73e8; padding: 10px 14px; text-align: right; font-weight: 700;">${{ order.total }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </td>
+          </tr>
+          <!-- Thank You -->
+          <tr>
+            <td style="padding: 0 40px 30px; text-align: center;">
+              <p style="color: #555555; font-size: 15px; line-height: 1.6; margin: 0;">Thank you for shopping with us! We hope you enjoy your purchase.</p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #2c2c2c; padding: 20px 40px; text-align: center;">
+              <p style="color: #aaaaaa; font-size: 13px; margin: 0 0 4px;">&copy; {% now "Y" %} Uddoktar Dokan. All rights reserved.</p>
+              <p style="color: #aaaaaa; font-size: 13px; margin: 0;">123 Main Street, Dhaka, Bangladesh</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

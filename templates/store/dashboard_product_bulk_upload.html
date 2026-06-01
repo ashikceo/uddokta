@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Upload Products - {{ site_name }}{% endblock %}
+
+{% block extra_js %}
+{% if batch_id %}
+<script>
+(function() {
+    var batchId = '{{ batch_id }}';
+    var totalRows = {{ total_rows }};
+    var progressUrl = '{% url "dashboard_bulk_import_progress" batch_id %}';
+    var statusEl = document.getElementById('import-status');
+    var progressBar = document.getElementById('progress-bar');
+    var progressText = document.getElementById('progress-text');
+    var doneEl = document.getElementById('import-done');
+    var errorsEl = document.getElementById('import-errors');
+
+    function poll() {
+        fetch(progressUrl)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var pct = Math.min(100, Math.round(data.processed / totalRows * 100));
+                if (progressBar) progressBar.style.width = pct + '%';
+                if (progressText) progressText.textContent = data.processed + ' / ' + totalRows + ' rows processed';
+                if (data.errors && data.errors.length) {
+                    errorsEl.style.display = 'block';
+                    data.errors.forEach(function(e) {
+                        var li = document.createElement('li');
+                        li.textContent = e;
+                        errorsEl.querySelector('ul').appendChild(li);
+                    });
+                }
+                if (data.processed >= totalRows) {
+                    if (statusEl) statusEl.textContent = 'Import complete!';
+                    if (doneEl) doneEl.style.display = 'block';
+                } else {
+                    setTimeout(poll, 2000);
+                }
+            })
+            .catch(function() { setTimeout(poll, 3000); });
+    }
+    setTimeout(poll, 1000);
+})();
+</script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_products' %}">Products</a> / <span>Bulk Upload</span>
+    </div>
+
+    <div class="page-header"><h1>Bulk Upload Products</h1></div>
+
+    <div style="display:flex;gap:25px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:300px;">
+            {% if batch_id %}
+            <div style="border:1px solid #eee;padding:25px;border-radius:8px;">
+                <h3 style="color:#28a745;">Medicine Import Started</h3>
+                <p>Processing <strong>{{ total_rows }}</strong> rows in <strong>{{ chunks }}</strong> batches via background worker.</p>
+                <div style="margin:20px 0;background:#eee;border-radius:8px;height:24px;overflow:hidden;">
+                    <div id="progress-bar" style="height:100%;width:0%;background:#28a745;transition:width 0.5s;"></div>
+                </div>
+                <p id="progress-text" style="color:#888;font-size:13px;">Waiting for worker...</p>
+                <p id="import-status" style="font-weight:600;color:#333;"></p>
+                <div id="import-errors" style="display:none;margin-top:15px;">
+                    <h4 style="color:#dc3545;font-size:14px;">Errors</h4>
+                    <ul style="font-size:12px;color:#666;"></ul>
+                </div>
+                <div id="import-done" style="display:none;margin-top:15px;">
+                    <a href="{% url 'dashboard_products' %}" class="btn btn-primary">View Products</a>
+                    <a href="{% url 'dashboard_product_bulk_upload' %}" class="btn btn-outline">Upload Another</a>
+                </div>
+            </div>
+            {% elif results %}
+            <div style="border:1px solid #eee;padding:25px;border-radius:8px;">
+                <h3>Upload Results</h3>
+                <p>Total rows: <strong>{{ results.total }}</strong></p>
+                <p>Created: <strong style="color:#28a745;">{{ results.created }}</strong></p>
+                {% if results.errors %}
+                <h4 style="margin-top:15px;color:#dc3545;">Errors ({{ results.errors|length }})</h4>
+                <ul style="font-size:12px;color:#666;">
+                    {% for err in results.errors %}<li>{{ err }}</li>{% endfor %}
+                </ul>
+                {% endif %}
+                <a href="{% url 'dashboard_products' %}" class="btn btn-primary" style="margin-top:15px;">View Products</a>
+                <a href="{% url 'dashboard_product_bulk_upload' %}" class="btn btn-outline" style="margin-top:15px;">Upload Another</a>
+            </div>
+            {% else %}
+            <div style="border:1px solid #eee;padding:25px;border-radius:8px;">
+                <h3 style="margin-bottom:15px;">Upload File</h3>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>CSV or Excel file</label>
+                        <input type="file" name="file" accept=".csv,.xlsx,.xls" class="form-control" required>
+                    </div>
+                    <p style="color:#888;font-size:12px;margin-bottom:15px;">
+                        <strong>Standard format:</strong> name, price, category_slug, old_price, stock, description, short_description, cost_price, available.
+                    </p>
+                    <p style="color:#888;font-size:12px;margin-bottom:15px;padding:8px 12px;background:#f0f8ff;border:1px solid #cce5ff;border-radius:4px;">
+                        <strong>Medicine Dataset:</strong> Upload a CSV with columns <code>brand name</code>, <code>dosage form</code>, <code>generic</code>, <code>strength</code>, <code>package container</code> for automatic medicine import (up to 21,000+ rows supported via background workers).
+                    </p>
+                    <button type="submit" class="btn btn-primary">Upload & Import</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <div style="width:350px;">
+            <div style="border:1px solid #eee;padding:20px;border-radius:8px;">
+                <h4 style="margin-bottom:10px;">Sample CSV Format</h4>
+                <pre style="background:#f5f5f5;padding:12px;border-radius:4px;font-size:11px;overflow-x:auto;">name,price,category_slug,stock,description,cost_price,available
+Sample Product,500,electronics,10,A great product,300,1
+Another Product,1200,,5,,800,1</pre>
+                <p style="color:#888;font-size:11px;margin-top:10px;">
+                    Use <code>category_slug</code> to assign a category. Leave blank for no category.
+                </p>
+            </div>
+            <div style="border:1px solid #eee;padding:20px;border-radius:8px;margin-top:15px;">
+                <h4 style="margin-bottom:10px;">Medicine CSV Columns</h4>
+                <pre style="background:#f5f5f5;padding:12px;border-radius:4px;font-size:11px;overflow-x:auto;">brand name,dosage form,generic,strength,package container
+Napa,Tablet,Paracetamol,500 mg,"Unit Price: ৳ 3.50"
+Fexo,Tablet,Fexofenadine,120 mg,"Unit Price: ৳ 5.00"</pre>
+                <p style="color:#888;font-size:11px;margin-top:10px;">
+                    Auto-detected and imported in 500-row chunks via background tasks.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

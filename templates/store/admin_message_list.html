@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Messages - Admin - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <span>Admin Messages</span>
+    </div>
+    <div class="page-header" style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
+        <h1 style="flex:1; margin:0;">All Messages</h1>
+        <a href="{% url 'admin_broadcast_create' %}" class="btn btn-primary"><i class="fa fa-bullhorn"></i> Broadcast to All Partners</a>
+    </div>
+
+    {% if conversations %}
+    <div style="border:1px solid #eee; border-radius:8px; overflow:hidden;">
+        {% for item in conversations %}
+        <a href="{% url 'admin_message_detail' item.conversation.id %}" style="display:block; padding:16px 20px; border-bottom:1px solid #eee; text-decoration:none; color:#333; transition:background 0.15s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="flex:1;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+                        <strong style="font-size:15px;">{{ item.conversation.subject|default:'(No subject)' }}</strong>
+                        {% if item.conversation.is_broadcast %}
+                        <span style="background:#17a2b8; color:#fff; border-radius:4px; padding:1px 6px; font-size:10px; font-weight:700;">BROADCAST</span>
+                        {% endif %}
+                        {% if item.unread_count > 0 %}
+                        <span style="background:#e74847; color:#fff; border-radius:10px; padding:2px 8px; font-size:11px; font-weight:700;">{{ item.unread_count }}</span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size:13px; color:#555;">
+                        {% if item.conversation.partner %}
+                        <strong>Partner:</strong> {{ item.conversation.partner.name }} &middot;
+                        {% endif %}
+                        <strong>Participants:</strong>
+                        {% for p in item.conversation.participants.all %}
+                        {{ p.username }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div style="font-size:12px; color:#888; margin-top:4px;">
+                        {{ item.conversation.messages.count }} message{% if item.conversation.messages.count != 1 %}s{% endif %}
+                        &middot; Last: {{ item.conversation.updated|date:"M d, Y H:i" }}
+                    </div>
+                </div>
+                <i class="fa fa-chevron-right" style="color:#ccc;"></i>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:60px 0; border:1px solid #eee; border-radius:8px;">
+        <i class="fa fa-envelope" style="font-size:48px; color:#ddd; margin-bottom:15px;"></i>
+        <p style="color:#888;">No conversations yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

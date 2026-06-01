@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ post.title }} - Uddoktar Dokan Blog{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'blog_list' %}">Blog</a> / <span>{{ post.title|truncatechars:30 }}</span>
+    </div>
+    <div style="max-width:800px; margin:0 auto;">
+        {% if post.image %}
+        <img src="{{ post.image.url }}" alt="{{ post.title }}" style="width:100%; margin-bottom:20px;">
+        {% endif %}
+        <h1>{{ post.title }}</h1>
+        <p style="color:#888; font-size:12px;">{{ post.created|date:"M. j, Y, g:i A" }} | {{ post.views }} views | {{ post.comments }} comments</p>
+        <div style="line-height:1.8; color:#555; margin-top:20px;">
+            {{ post.content|linebreaks }}
+        </div>
+    </div>
+</div>
+{% endblock %}

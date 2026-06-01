@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Withdraw Funds - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_wallet' %}">Wallet</a> / <span>Withdraw</span>
+    </div>
+
+    <div class="page-header">
+        <h1>Withdraw Funds</h1>
+    </div>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:300px;">
+            {% if error %}
+            <div class="alert alert-error" style="background:#f8d7da;border:1px solid #f5c6cb;color:#721c24;padding:12px 16px;border-radius:4px;margin-bottom:20px;">{{ error }}</div>
+            {% endif %}
+            {% if success %}
+            <div class="alert alert-success" style="background:#d4edda;border:1px solid #c3e6cb;color:#155724;padding:12px 16px;border-radius:4px;margin-bottom:20px;">{{ success }}</div>
+            {% endif %}
+
+            {% if not error %}
+            <div style="border:1px solid #eee;padding:20px;border-radius:8px;margin-bottom:20px;">
+                <p style="color:#888;font-size:13px;">Available for Withdrawal</p>
+                <h2 style="font-size:36px;color:#e74847;margin:5px 0;">৳{{ wallet.available_balance|floatformat:0 }}</h2>
+                {% if wallet.locked_balance > 0 %}
+                <p style="color:#999;font-size:11px;margin-top:2px;">(৳{{ wallet.locked_balance|floatformat:0 }} locked as bonus — released after admin commission reaches ৳1000)</p>
+                {% endif %}
+                <p style="color:#888;font-size:12px;margin-top:8px;">Total balance: ৳{{ wallet.balance|floatformat:0 }}</p>
+                {% if wallet_settings %}
+                <p style="color:#888;font-size:12px;margin-top:4px;">
+                    Min withdrawal: ৳{{ wallet_settings.min_withdrawal|floatformat:0 }}
+                    {% if wallet_settings.max_withdrawal %} | Max: ৳{{ wallet_settings.max_withdrawal|floatformat:0 }}{% endif %}
+                    | Fee: {% if wallet_settings.withdrawal_fee_type == 'fixed' %}৳{{ wallet_settings.withdrawal_fee_value }}{% else %}{{ wallet_settings.withdrawal_fee_value }}%{% endif %}
+                </p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <form method="post" style="border:1px solid #eee;padding:25px;border-radius:8px;">
+                {% csrf_token %}
+
+                <div class="form-group" style="margin-bottom:18px;">
+                    <label>Withdrawal Amount (BDT) <span class="required">*</span></label>
+                    <input type="number" step="0.01" name="amount" class="form-control" required placeholder="e.g. 1000" min="{{ wallet_settings.min_withdrawal|default:'0' }}" max="{{ wallet.available_balance }}" style="font-size:18px;padding:12px;">
+                </div>
+
+                {% if payout_methods %}
+                <div class="form-group" style="margin-bottom:18px;">
+                    <label>Saved Payout Method</label>
+                    <select name="payout_method" class="form-control" onchange="fillPayoutMethod(this)">
+                        <option value="">-- Select Saved Method (or enter below) --</option>
+                        {% for pm in payout_methods %}
+                        <option value="{{ pm.id }}" data-method="{{ pm.method_type }}" data-account="{{ pm.account_number }}" data-holder="{{ pm.account_holder }}">
+                            {{ pm.get_method_type_display }} — {{ pm.account_number }} {% if pm.is_default %}(Default){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div class="form-group" style="margin-bottom:18px;">
+                    <label>Payment Method <span class="required">*</span></label>
+                    <select name="method" class="form-control" id="methodSelect" required>
+                        <option value="">-- Select --</option>
+                        <option value="bkash">bKash</option>
+                        <option value="nagad">Nagad</option>
+                        <option value="rocket">Rocket</option>
+                        <option value="bank">Bank Transfer</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom:18px;">
+                    <label>Account Number <span class="required">*</span></label>
+                    <input type="text" name="account_number" class="form-control" id="accountNumberInput" required placeholder="e.g. 01XXXXXXXXX">
+                </div>
+
+                <div class="form-group" style="margin-bottom:18px;">
+                    <label>Account Holder Name</label>
+                    <input type="text" name="account_holder" class="form-control" id="accountHolderInput" placeholder="Name on the account">
+                </div>
+
+                <div id="bankFields" style="display:none;border-top:1px solid #eee;padding-top:16px;margin-top:16px;">
+                    <p style="font-weight:600;margin-bottom:12px;">Bank Details</p>
+                    <div class="form-group" style="margin-bottom:18px;">
+                        <label>Bank Name</label>
+                        <input type="text" name="bank_name" class="form-control" placeholder="e.g. Dutch Bangla Bank">
+                    </div>
+                    <div class="form-group" style="margin-bottom:18px;">
+                        <label>Branch</label>
+                        <input type="text" name="branch" class="form-control" placeholder="Branch name">
+                    </div>
+                    <div class="form-group" style="margin-bottom:18px;">
+                        <label>Routing Number</label>
+                        <input type="text" name="routing_number" class="form-control" placeholder="Routing number">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;margin-top:10px;" {% if wallet.is_frozen or wallet.balance <= 0 %}disabled{% endif %}>
+                    <i class="fa fa-arrow-up"></i> Submit Withdrawal Request
+                </button>
+            </form>
+
+            <div style="margin-top:20px;">
+                <a href="{% url 'dashboard_payout_methods' %}" class="btn btn-outline" style="font-size:12px;"><i class="fa fa-plus"></i> Save a Payout Method for Faster Withdrawals</a>
+                <a href="{% url 'dashboard_withdrawal_list' %}" class="btn btn-outline" style="font-size:12px;"><i class="fa fa-list"></i> View Withdrawal History</a>
+            </div>
+        </div>
+
+        <div style="width:300px;">
+            <div style="border:1px solid #eee;padding:20px;border-radius:8px;">
+                <h4 style="margin-bottom:15px;">Withdrawal Rules</h4>
+                <ul style="padding-left:18px;font-size:13px;line-height:1.8;color:#555;">
+                    {% if wallet_settings %}
+                    <li>Minimum withdrawal: <strong>৳{{ wallet_settings.min_withdrawal|floatformat:0 }}</strong></li>
+                    {% if wallet_settings.max_withdrawal %}
+                    <li>Maximum per request: <strong>৳{{ wallet_settings.max_withdrawal|floatformat:0 }}</strong></li>
+                    {% endif %}
+                    <li>Withdrawal fee: <strong>{% if wallet_settings.withdrawal_fee_type == 'fixed' %}৳{{ wallet_settings.withdrawal_fee_value }}{% else %}{{ wallet_settings.withdrawal_fee_value }}%{% endif %}</strong></li>
+                    <li>Max pending requests: <strong>{{ wallet_settings.max_pending_withdrawals }}</strong></li>
+                    {% endif %}
+                    {% if wallet.locked_balance > 0 %}
+                    <li style="color:#e74847;">Bonuses locked: <strong>৳{{ wallet.locked_balance|floatformat:0 }}</strong></li>
+                    <li style="color:#666;font-size:12px;">Bonus unlocks once admin commission from your sales reaches ৳1000</li>
+                    {% endif %}
+                    <li>Processing time: <strong>24-48 hours</strong></li>
+                    <li>Money sent to your bKash / Nagad / Bank account</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fillPayoutMethod(select) {
+    var option = select.options[select.selectedIndex];
+    if (!option.value) return;
+    document.getElementById('methodSelect').value = option.dataset.method;
+    document.getElementById('accountNumberInput').value = option.dataset.account;
+    document.getElementById('accountHolderInput').value = option.dataset.holder || '';
+    toggleBankFields();
+}
+
+document.getElementById('methodSelect')?.addEventListener('change', toggleBankFields);
+function toggleBankFields() {
+    var method = document.getElementById('methodSelect')?.value;
+    document.getElementById('bankFields').style.display = method === 'bank' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

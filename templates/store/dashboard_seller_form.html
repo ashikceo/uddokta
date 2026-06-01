@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Seller - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_sellers' %}">Sellers</a> / <span>Add Seller</span>
+    </div>
+    <div class="page-header"><h1>Add New Seller</h1></div>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <div class="dashboard-form-container" style="max-width:500px;">
+        <form method="POST" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            <div class="dashboard-form-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-user-plus"></i></div>
+                    <div>
+                        <h3>Seller Information</h3>
+                        <p>Create a new seller under your dealership</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="form-group">
+                        <label>Seller Name <span class="required">*</span></label>
+                        <input type="text" name="name" class="form-control" required placeholder="Enter seller name">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="text" name="phone" class="form-control" placeholder="Phone number">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" class="form-control" placeholder="Brief description of the seller"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Profile Image</label>
+                        <input type="file" name="profile_image" class="form-control" accept="image/*">
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary"><i class="fa fa-plus-circle"></i> Add Seller</button>
+                <a href="{% url 'dashboard_sellers' %}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

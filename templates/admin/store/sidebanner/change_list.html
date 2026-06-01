@@ -1,0 +1,240 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.banner-wrap { max-width: 100%; }
+.partner-group {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.partner-group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+.partner-group-header:hover { background: #e9ecef; }
+.partner-group-header .toggle-icon {
+  font-size: 14px;
+  color: #6c757d;
+  transition: transform 0.2s;
+  width: 16px;
+  text-align: center;
+}
+.partner-group-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+.partner-group-header .partner-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2c3e50;
+  flex: 1;
+}
+.partner-group-header .partner-name a { color: #2c3e50; text-decoration: none; }
+.partner-group-header .partner-name a:hover { color: #e74847; }
+.partner-group-header .banner-count {
+  font-size: 12px;
+  color: #6c757d;
+  background: #dee2e6;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+.partner-group-body { padding: 0; }
+.partner-group-body.collapsed { display: none; }
+
+.banner-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px 12px 28px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.15s;
+}
+.banner-card:last-child { border-bottom: none; }
+.banner-card:hover { background: #f8f9fa; }
+
+.banner-card .banner-img {
+  width: 90px;
+  height: 60px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #eee;
+  flex-shrink: 0;
+  background: #fafafa;
+}
+.banner-card .banner-info {
+  flex: 1;
+  min-width: 0;
+}
+.banner-card .banner-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+.banner-card .banner-title a { color: #333; text-decoration: none; }
+.banner-card .banner-title a:hover { color: #e74847; }
+.banner-card .banner-link {
+  font-size: 11px;
+  color: #888;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+  margin-top: 2px;
+}
+.banner-card .banner-order {
+  font-size: 11px;
+  color: #999;
+  min-width: 30px;
+  text-align: center;
+}
+.banner-card .banner-status {
+  min-width: 60px;
+  text-align: center;
+}
+.banner-card .banner-actions {
+  display: flex;
+  gap: 4px;
+  min-width: 80px;
+  justify-content: flex-end;
+}
+.banner-card .banner-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #6c757d;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.banner-card .banner-actions a:hover { background: #e74847; color: #fff; }
+
+.banner-card .no-image {
+  width: 90px;
+  height: 60px;
+  border-radius: 6px;
+  border: 1px dashed #ddd;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  font-size: 11px;
+  background: #fafafa;
+}
+
+.empty-state {
+  padding: 30px;
+  text-align: center;
+  color: #999;
+}
+
+.object-tools { margin-bottom: 16px; }
+.object-tools a { background: #e74847; border-radius: 4px; }
+.object-tools a:hover { background: #cb3231; }
+
+#changelist { background: transparent; border: none; box-shadow: none; }
+#changelist .actions { margin-bottom: 16px; padding: 10px 16px; background: #fff; border: 1px solid #dee2e6; border-radius: 8px; }
+#changelist .actions select { min-width: 150px; }
+#changelist .actions label { display: flex; align-items: center; gap: 8px; }
+#changelist .actions button { background: #e74847; color: #fff; border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; }
+#changelist .actions button:hover { background: #cb3231; }
+#changelist-search { margin-bottom: 16px; }
+#changelist-search input[type="text"] { border: 1px solid #dee2e6; border-radius: 4px; padding: 8px 12px; }
+#changelist-search input[type="submit"] { background: #2c3e50; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+#changelist-filter { margin-bottom: 16px; }
+
+@media (max-width: 768px) {
+  .banner-card { flex-wrap: wrap; padding: 8px 12px 8px 20px; }
+  .banner-card .banner-link { display: none; }
+}
+</style>
+{% endblock %}
+
+{% block result_list %}
+<div class="banner-wrap">
+  {% if grouped_banners %}
+    {% for partner, banners in grouped_banners.items %}
+    <div class="partner-group">
+      <div class="partner-group-header" onclick="toggleGroup(this)">
+        <span class="toggle-icon">▼</span>
+        <span class="partner-name">
+          {% if partner %}
+          <a href="{% url 'custom_admin:store_partner_change' partner.pk %}">{{ partner.name }}</a>
+          {% else %}
+          <em style="color:#999;">No Partner</em>
+          {% endif %}
+        </span>
+        <span class="banner-count">{{ banners|length }} banner{{ banners|length|pluralize }}</span>
+      </div>
+      <div class="partner-group-body">
+        {% for banner in banners %}
+        <div class="banner-card">
+          {% if banner.image %}
+          <img src="{{ banner.image.url }}" alt="{{ banner.title }}" class="banner-img">
+          {% else %}
+          <div class="no-image">No Image</div>
+          {% endif %}
+          <div class="banner-info">
+            <div class="banner-title">
+              <a href="{% url 'custom_admin:store_sidebanner_change' banner.pk %}">{{ banner.title|default:"(untitled)" }}</a>
+            </div>
+            {% if banner.link_url %}
+            <div class="banner-link">{{ banner.link_url }}</div>
+            {% endif %}
+          </div>
+          <span class="banner-order">#{{ banner.order }}</span>
+          <span class="banner-status">
+            {% if banner.is_active %}
+            <span style="color:#28a745;font-size:11px;font-weight:600;">Active</span>
+            {% else %}
+            <span style="color:#dc3545;font-size:11px;">Inactive</span>
+            {% endif %}
+          </span>
+          <span class="banner-actions">
+            <a href="{% url 'custom_admin:store_sidebanner_change' banner.pk %}" title="Edit"><i class="fa fa-pencil"></i></a>
+            <a href="{% url 'custom_admin:store_sidebanner_delete' banner.pk %}" title="Delete"><i class="fa fa-trash"></i></a>
+          </span>
+        </div>
+        {% empty %}
+        <div class="empty-state">No banners for this partner.</div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <p style="font-size:16px;margin-bottom:8px;">No side banners yet.</p>
+      <p><a href="{% url 'custom_admin:store_sidebanner_add' %}" style="color:#e74847;">Add your first banner</a></p>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+function toggleGroup(header) {
+  var body = header.nextElementSibling;
+  var icon = header.querySelector('.toggle-icon');
+  if (body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    icon.classList.remove('collapsed');
+  } else {
+    body.classList.add('collapsed');
+    icon.classList.add('collapsed');
+  }
+}
+</script>
+{% endblock %}

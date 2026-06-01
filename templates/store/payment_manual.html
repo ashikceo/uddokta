@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Instructions{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:600px;margin:40px auto;padding:0 15px;text-align:center;">
+    <div style="width:80px;height:80px;background:#f59e0b;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+        <span style="color:#fff;font-size:36px;">⏳</span>
+    </div>
+
+    <h2 style="margin-bottom:10px;">Payment Submitted</h2>
+    <p style="color:#666;margin-bottom:25px;">Your payment information has been recorded. We will verify your payment and update the order status.</p>
+
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:20px;text-align:left;margin-bottom:25px;">
+        <p style="margin:0 0 8px 0;"><strong>Order:</strong> #{{ order.id }}</p>
+        <p style="margin:0 0 8px 0;"><strong>Payment Method:</strong> {{ order.payment_method }}</p>
+        <p style="margin:0 0 8px 0;"><strong>Transaction ID:</strong> {{ order.tracking_id }}</p>
+        <p style="margin:0 0 8px 0;"><strong>Amount:</strong> ৳{{ order.total }}</p>
+        {% if method %}
+        <p style="margin:0;padding-top:8px;border-top:1px solid #86efac;">
+            <strong>Send to:</strong> {{ method.account_number }} ({{ method.account_type }})
+        </p>
+        {% endif %}
+    </div>
+
+    {% if method and method.instructions %}
+    <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:15px;text-align:left;margin-bottom:25px;font-size:14px;">
+        <strong>📌 Instructions:</strong>
+        <p style="margin:8px 0 0 0;color:#555;">{{ method.instructions }}</p>
+    </div>
+    {% endif %}
+
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:15px;text-align:left;margin-bottom:25px;font-size:14px;">
+        <strong>ℹ️ What happens next?</strong>
+        <ol style="margin:8px 0 0 0;padding-left:20px;color:#555;">
+            <li>Our team will verify your payment using the Transaction ID you provided.</li>
+            <li>Once confirmed, your order status will be updated to <strong>Processing</strong>.</li>
+            <li>You will receive a notification when your payment is confirmed.</li>
+            <li>If you entered an incorrect Transaction ID, please contact our support team.</li>
+        </ol>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="{% url 'order_confirmation' order.id %}" style="display:inline-block;padding:12px 30px;background:#e74847;color:#fff;text-decoration:none;border-radius:4px;">View Order Details</a>
+        <a href="{% url 'dashboard' %}" style="display:inline-block;padding:12px 30px;background:#666;color:#fff;text-decoration:none;border-radius:4px;">My Dashboard</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Sellers - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Sellers</span>
+    </div>
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>My Sellers</h1>
+        <a href="{% url 'dashboard_seller_add' %}" class="btn btn-primary"><i class="fa fa-plus"></i> Add New Seller</a>
+    </div>
+
+    {% if sellers %}
+    <div class="sellers-grid">
+        {% for seller in sellers %}
+        <div class="seller-card">
+            <div class="seller-card-img">
+                {% if seller.profile_image %}
+                <img src="{{ seller.profile_image.url }}" alt="{{ seller.name }}">
+                {% else %}
+                <img src="/static/img/placeholder_80x80.png" alt="">
+                {% endif %}
+            </div>
+            <h4>{{ seller.name }}</h4>
+            {% if seller.phone %}
+            <p class="seller-phone"><i class="fa fa-phone"></i> {{ seller.phone }}</p>
+            {% endif %}
+            {% if seller.description %}
+            <p class="seller-desc">{{ seller.description|truncatechars:80 }}</p>
+            {% endif %}
+            <div class="seller-stats">
+                <span><strong>{{ seller.products.count }}</strong> Products</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:60px 20px; border:1px solid #eee; border-radius:8px;">
+        <i class="fa fa-users" style="font-size:48px; color:#ddd; margin-bottom:15px;"></i>
+        <h3 style="color:#888; font-weight:400;">No sellers yet</h3>
+        <p style="color:#aaa; margin-bottom:20px;">Add your first seller to get started.</p>
+        <a href="{% url 'dashboard_seller_add' %}" class="btn btn-primary"><i class="fa fa-plus"></i> Add New Seller</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

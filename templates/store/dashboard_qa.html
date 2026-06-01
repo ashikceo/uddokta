@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Product Q&A - {{ partner.name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Product Q&A</span>
+    </div>
+    <div class="page-header">
+        <h1>Product Questions &amp; Answers</h1>
+    </div>
+
+    {% if unanswered %}
+    <h3 style="color:#e74847; margin-bottom:15px;">Unanswered Questions ({{ unanswered.count }})</h3>
+    <div style="border:1px solid #eee; border-radius:8px; overflow:hidden; margin-bottom:30px;">
+        {% for qa in unanswered %}
+        <div style="padding:16px 20px; border-bottom:1px solid #eee;">
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+                <div style="flex:1;">
+                    <div style="font-size:11px; color:#888; margin-bottom:4px;">
+                        <a href="{% url 'product_detail' qa.product.slug %}">{{ qa.product.name }}</a>
+                        &middot; {{ qa.user.username|default:'Anonymous' }} &middot; {{ qa.created|date:"M d, Y" }}
+                    </div>
+                    <p style="margin:0 0 8px 0; font-weight:600;">{{ qa.question }}</p>
+                    <form method="POST" action="{% url 'product_answer_question' qa.id %}" style="display:flex; gap:8px;">
+                        {% csrf_token %}
+                        <input type="text" name="answer" class="form-control" placeholder="Type your answer..." style="flex:1; padding:8px 12px; font-size:13px;" required>
+                        <button type="submit" class="btn btn-primary" style="padding:8px 18px; font-size:12px;"><i class="fa fa-check"></i> Answer</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h3 style="margin-bottom:15px;">Answered Questions</h3>
+    {% if answered %}
+    <div style="border:1px solid #eee; border-radius:8px; overflow:hidden;">
+        {% for qa in answered %}
+        <div style="padding:16px 20px; border-bottom:1px solid #eee;">
+            <div style="margin-bottom:4px;">
+                <span style="font-size:11px; color:#888;">
+                    <a href="{% url 'product_detail' qa.product.slug %}">{{ qa.product.name }}</a>
+                    &middot; {{ qa.user.username|default:'Anonymous' }}
+                </span>
+            </div>
+            <p style="margin:0 0 8px 0; font-weight:600;"><i class="fa fa-question-circle" style="color:#e74847;"></i> {{ qa.question }}</p>
+            <div style="padding:10px 14px; background:#f8f9fa; border-radius:6px; border-left:3px solid #28a745;">
+                <div style="font-size:12px; color:#28a745; font-weight:600; margin-bottom:4px;"><i class="fa fa-check-circle"></i> Answer</div>
+                <p style="margin:0; color:#555;">{{ qa.answer }}</p>
+                <div style="font-size:11px; color:#999; margin-top:4px;">— {{ qa.answered_by.username }} &middot; {{ qa.answered_at|date:"M d, Y" }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:40px 0; border:1px solid #eee; border-radius:8px;">
+        <i class="fa fa-comments" style="font-size:36px; color:#ddd; margin-bottom:10px;"></i>
+        <p style="color:#888;">No questions yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

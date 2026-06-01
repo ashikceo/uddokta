@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Compare Products - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1>Compare Products</h1>
+        {% if products %}<a href="{% url 'compare_clear' %}" class="btn btn-outline" style="font-size:12px;">Clear All</a>{% endif %}
+    </div>
+
+    {% if products %}
+    <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;">
+        <tr>
+            <th style="text-align:left;width:150px;background:#f9f9f9;padding:12px;">Feature</th>
+            {% for product in products %}
+            <th style="text-align:center;padding:12px;min-width:200px;">
+                <a href="{% url 'compare_remove' product.id %}" style="float:right;color:#dc3545;text-decoration:none;">&times;</a>
+            </th>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td style="background:#f9f9f9;padding:12px;font-weight:600;">Image</td>
+            {% for product in products %}
+            <td style="text-align:center;padding:10px;">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width:150px;height:150px;object-fit:cover;">
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td style="background:#f9f9f9;padding:12px;font-weight:600;">Name</td>
+            {% for product in products %}
+            <td style="text-align:center;padding:10px;"><a href="{% url 'product_detail' product.slug %}">{{ product.name }}</a></td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td style="background:#f9f9f9;padding:12px;font-weight:600;">Price</td>
+            {% for product in products %}
+            <td style="text-align:center;padding:10px;font-size:18px;font-weight:700;color:#e74847;">৳{{ product.price }}</td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td style="background:#f9f9f9;padding:12px;font-weight:600;">Stock</td>
+            {% for product in products %}
+            <td style="text-align:center;padding:10px;">
+                {% if product.stock > 0 %}<span style="color:#28a745;">In Stock ({{ product.stock }})</span>{% else %}<span style="color:#dc3545;">Out of Stock</span>{% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td style="background:#f9f9f9;padding:12px;font-weight:600;">Rating</td>
+            {% for product in products %}
+            <td style="text-align:center;padding:10px;">
+                {% with avg=product.reviews.all|dictsort:'rating'|first %}
+                {% if avg %}{{ product.reviews.all|length }} review(s){% else %}No reviews{% endif %}
+                {% endwith %}
+            </td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td style="background:#f9f9f9;padding:12px;font-weight:600;">Description</td>
+            {% for product in products %}
+            <td style="text-align:center;padding:10px;font-size:13px;color:#666;">{{ product.short_description|truncatechars:120 }}</td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td style="background:#f9f9f9;padding:12px;font-weight:600;">Action</td>
+            {% for product in products %}
+            <td style="text-align:center;padding:10px;">
+                <a href="{% url 'add_to_cart' product.id %}" class="btn btn-primary" style="font-size:11px;">Add to Cart</a>
+            </td>
+            {% endfor %}
+        </tr>
+    </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:80px 0;">
+        <i class="fa fa-balance-scale" style="font-size:48px;color:#ddd;margin-bottom:15px;"></i>
+        <h3>No products to compare</h3>
+        <p style="color:#888;">Add up to 4 products to compare them side by side.</p>
+        <a href="{% url 'shop_grid' %}" class="btn btn-primary" style="margin-top:10px;">Browse Products</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

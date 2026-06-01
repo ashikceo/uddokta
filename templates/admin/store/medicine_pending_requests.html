@@ -1,0 +1,94 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+<style>
+  .table-wrap { background:#fff; border:1px solid #dee2e6; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  .table-wrap table { width:100%; border-collapse:collapse; }
+  .table-wrap th { background:#f8f9fa; padding:12px 14px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; color:#6c757d; border-bottom:2px solid #dee2e6; text-align:left; }
+  .table-wrap td { padding:10px 14px; font-size:13px; border-bottom:1px solid #f0f0f0; }
+  .table-wrap tr:hover td { background:#f8f9fa; }
+  .back-link { margin-bottom:16px; }
+  .back-link a { color:#e74847; text-decoration:none; font-size:13px; }
+  .badge { background:#ffc107; color:#333; padding:2px 10px; border-radius:10px; font-size:11px; font-weight:600; }
+  .btn { display:inline-block; padding:4px 12px; border-radius:4px; font-size:11px; text-decoration:none; color:#fff; }
+  .btn-approve { background:#28a745; }
+  .btn-reject { background:#dc3545; }
+  .empty { padding:40px; text-align:center; color:#6c757d; }
+  .empty i { font-size:40px; opacity:0.3; display:block; margin-bottom:10px; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'custom_admin:index' %}">{% trans 'Home' %}</a>
+  &rsaquo; <a href="{% url 'custom_admin:index' %}#medicine-section">Medicine</a>
+  &rsaquo; Pending Requests
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <div class="back-link">
+    <a href="{% url 'custom_admin:index' %}">&larr; Back to Dashboard</a>
+    &nbsp;|&nbsp;
+    <a href="{% url 'custom_admin:medicine-partner-access' %}" style="color:#6f42c1;text-decoration:none;font-size:13px;"><i class="fa fa-shield"></i> Manage Partner Access</a>
+  </div>
+  <h1>Pending Medicine Product Requests <span class="badge">{{ products|length }}</span></h1>
+  <p style="color:#6c757d;font-size:13px;margin-bottom:20px;">Partners have requested these medicine products. Approve to add them to the catalog, or reject to remove.</p>
+
+  {% if products %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Brand Name</th>
+          <th>Generic Name</th>
+          <th>Strength</th>
+          <th>Dosage Form</th>
+          <th>Price</th>
+          <th>Requested By</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td><strong>{{ p.brand_name }}</strong></td>
+          <td style="font-size:12px;">{{ p.generic_name|default:'—' }}</td>
+          <td>{{ p.strength|default:'—' }}</td>
+          <td>{{ p.dosage_form|default:'—' }}</td>
+          <td><strong>৳{{ p.price }}</strong></td>
+          <td>{% if p.requested_by %}<a href="{% url 'custom_admin:store_partner_change' p.requested_by.id %}">{{ p.requested_by.name }}</a>{% else %}<span style="color:#999;">Admin</span>{% endif %}</td>
+          <td style="font-size:11px;color:#6c757d;">{{ p.created|date:"d M Y" }}</td>
+          <td style="white-space:nowrap;">
+            <form method="post" action="{% url 'custom_admin:store_medicineproduct_changelist' %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="approve_selected">
+              <input type="hidden" name="_selected_action" value="{{ p.id }}">
+              <button type="submit" class="btn btn-approve"><i class="fa fa-check"></i> Approve</button>
+            </form>
+            <form method="post" action="{% url 'custom_admin:store_medicineproduct_changelist' %}" style="display:inline;" onsubmit="return confirm('Delete this pending request?');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="reject_selected">
+              <input type="hidden" name="_selected_action" value="{{ p.id }}">
+              <button type="submit" class="btn btn-reject"><i class="fa fa-times"></i> Reject</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <i class="fa fa-check-circle" style="color:#28a745;opacity:1;"></i>
+    <p style="font-size:15px;">No pending requests — all caught up!</p>
+    <p style="font-size:12px;">When partners request new medicine products, they will appear here for your approval.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

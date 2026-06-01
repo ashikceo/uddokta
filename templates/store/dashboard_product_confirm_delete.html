@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Product - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_products' %}">Products</a> / <span>Delete</span>
+    </div>
+    <div style="max-width:500px; margin:40px auto; text-align:center;">
+        <i class="fa fa-trash" style="font-size:48px; color:#e74847; margin-bottom:20px;"></i>
+        <h3>Move "{{ product.name }}" to Trash?</h3>
+        <p style="color:#666; margin:15px 0;">It will be permanently deleted after 7 days unless restored from trash.</p>
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary" style="background:#e74847;"><i class="fa fa-trash"></i> Move to Trash</button>
+            <a href="{% url 'dashboard_products' %}" class="btn btn-outline">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

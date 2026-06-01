@@ -1,0 +1,234 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.bd-address-picker .form-row.field-address_division,
+.bd-address-picker .form-row.field-address_district,
+.bd-address-picker .form-row.field-address_upazila {
+    display: none;
+}
+.bd-address-picker .form-row.field-address_street {
+    display: block;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+<script>
+(function() {
+    var ADMIN_BD_DATA = {
+        "Dhaka Division": {
+            "Dhaka District": ["Dhamrai", "Dohar", "Keraniganj", "Nawabganj", "Savar"],
+            "Faridpur District": ["Alfadanga", "Bhanga", "Boalmari", "Charbhadrasan", "Faridpur Sadar", "Madhukhali", "Nagarkanda", "Sadarpur", "Saltha"],
+            "Gazipur District": ["Gazipur Sadar", "Kaliakair", "Kaliganj", "Kapasia", "Sreepur"],
+            "Gopalganj District": ["Gopalganj Sadar", "Kashiani", "Kotalipara", "Muksudpur", "Tungipara"],
+            "Kishoreganj District": ["Ashtagram", "Bajitpur", "Bhairab", "Hossainpur", "Itna", "Karimganj", "Katiadi", "Kishoreganj Sadar", "Kuliarchar", "Mithamain", "Nikli", "Pakundia", "Tarail"],
+            "Madaripur District": ["Kalkini", "Madaripur Sadar", "Rajoir", "Shibchar"],
+            "Manikganj District": ["Daulatpur", "Ghior", "Harirampur", "Manikganj Sadar", "Saturia", "Shivaloy", "Singair"],
+            "Munshiganj District": ["Gazaria", "Lauhajang", "Munshiganj Sadar", "Sirajdikhan", "Srinagar", "Tongibari"],
+            "Narayanganj District": ["Araihazar", "Sonargaon", "Narayanganj Sadar", "Rupganj", "Bandar"],
+            "Narsingdi District": ["Belabo", "Monohardi", "Narsingdi Sadar", "Palash", "Raipura", "Shibpur"],
+            "Rajbari District": ["Baliakandi", "Goalanda", "Kalukhali", "Pangsha", "Rajbari Sadar"],
+            "Shariatpur District": ["Bhedarganj", "Damudya", "Gosairhat", "Naria", "Shariatpur Sadar", "Jajira"],
+            "Tangail District": ["Basail", "Bhuiyanpur", "Delduar", "Dhanbari", "Ghatail", "Gopalpur", "Kalihati", "Madhupur", "Mirzapur", "Nagarpur", "Sakhipur", "Tangail Sadar"]
+        },
+        "Khulna Division": {
+            "Bagerhat District": ["Chitalmari", "Fakirhat", "Kachua", "Mollahat", "Mongla", "Morelganj", "Rampal", "Sharankhola", "Bagerhat Sadar"],
+            "Chuadanga District": ["Alamdanga", "Chuadanga Sadar", "Damurhuda", "Jibannagar"],
+            "Jessore District": ["Abhaynagar", "Bagharpara", "Chaugachha", "Jhikargachha", "Keshabpur", "Jessore Sadar", "Manirampur", "Sharsha"],
+            "Jhenaidah District": ["Harinakundu", "Jhenaidah Sadar", "Kaliganj", "Kotchandpur", "Maheshpur", "Shailkupa"],
+            "Khulna District": ["Batiaghata", "Dakop", "Dumuria", "Koyra", "Paikgachha", "Fultala", "Rupsa", "Terkhada", "Dighlia"],
+            "Kushtia District": ["Bheramara", "Daulatpur", "Khoksa", "Kumarkhali", "Kushtia Sadar", "Mirpur"],
+            "Magura District": ["Magura Sadar", "Mohammadpur", "Shalikha", "Sreepur"],
+            "Meherpur District": ["Gangni", "Mujibnagar", "Meherpur Sadar"],
+            "Narail District": ["Kalia", "Lohagara", "Narail Sadar"],
+            "Satkhira District": ["Asashuni", "Debhata", "Kalaroa", "Kaliganj", "Satkhira Sadar", "Shyamnagar", "Tala"]
+        },
+        "Chittagong Division": {
+            "Bandarban District": ["Alikadam", "Bandarban Sadar", "Lama", "Naikyangchhari", "Rowangchhari", "Ruma", "Thanchi"],
+            "Brahmanbaria District": ["Akhaura", "Bancharampur", "Bijoynagar", "Brahmanbaria Sadar", "Ashuganj", "Kasba", "Nabinagar", "Nasirnagar", "Sarail"],
+            "Chandpur District": ["Chandpur Sadar", "Faridganj", "Haimchar", "Hajiganj", "Kachua", "Matlab South", "Shahrasti"],
+            "Chittagong District": ["Anwara", "Banshkhali", "Boalkhali", "Chandanaish", "Fatikchhari", "Hathazari", "Lohagara", "Mirsarai", "Patiya", "Rangunia", "Raozan", "Sandwip", "Satkania", "Sitakunda", "Karnaphuli"],
+            "Comilla District": ["Barura", "Brahmanpara", "Burichang", "Chandina", "Chauddagram", "Adarsh Sadar", "Sadar South", "Daudkandi", "Debidwar", "Homna", "Laksam", "Manoharganj", "Meghna", "Muradnagar", "Nangalkot", "Titas", "Lalmai"],
+            "Cox's Bazar District": ["Chakaria", "Cox's Bazar Sadar", "Kutubdia", "Maheshkhali", "Pekua", "Ramu", "Teknaf", "Ukhia", "Eidgaon"],
+            "Feni District": ["Chagalnaiya", "Daganbhuiyan", "Feni Sadar", "Fulgazi", "Parashuram", "Sonagazi"],
+            "Khagrachhari District": ["Dighinala", "Manikchhari", "Khagrachhari Sadar", "Lakshmichari", "Mahalchhari", "Matiranga", "Panchhari", "Ramgarh", "Guimara"],
+            "Lakshmipur District": ["Kamalnagar", "Lakshmipur Sadar", "Raipur", "Ramganj", "Ramgati"],
+            "Noakhali District": ["Begumganj", "Chatkhil", "Companiganj", "Hatia", "Senbag", "Sonaimuri", "Subarnachar", "Noakhali Sadar", "Kabirhat"],
+            "Rangamati Hill District": ["Baghaichhari", "Barkal", "Kaukhali", "Kaptai", "Jurachari", "Langadu", "Naniarchar", "Rangamati Sadar", "Rajasthali", "Bilaichhari"]
+        },
+        "Rajshahi Division": {
+            "Bogra District": ["Adamdighi", "Bogra Sadar", "Dhunat", "Dupchachiya", "Gabtoli", "Kahalu", "Nandigram", "Sariakandi", "Shajahanpur", "Sherpur", "Shibganj", "Sonatala"],
+            "Joypurhat District": ["Akkelpur", "Joypurhat Sadar", "Kalai", "Panchbibi", "Khetlal"],
+            "Naogaon District": ["Atrai", "Dhamairhat", "Manda", "Mahadevpur", "Naogaon Sadar", "Niamatpur", "Patnitala", "Raninagar", "Sapahar", "Badalgachhi", "Porsha"],
+            "Natore District": ["Bagatipara", "Baraigram", "Gurdaspur", "Lalpur", "Natore Sadar", "Singra", "Naldanga"],
+            "Chapainawabganj District": ["Shibganj", "Bholahat", "Gomastapur", "Nachol", "Chapainawabganj Sadar"],
+            "Pabna District": ["Atgharia", "Bera", "Bhangura", "Chatmohar", "Faridpur", "Ishwardi", "Pabna Sadar", "Santhia", "Sujanagar"],
+            "Rajshahi District": ["Bagha", "Bagmara", "Charghat", "Durgapur", "Godagari", "Mohanpur", "Paba", "Puthia", "Tanor"],
+            "Sirajganj District": ["Belkuchi", "Chauhali", "Kamarkhand", "Kazipur", "Raiganj", "Shahjadpur", "Sirajganj Sadar", "Tarash", "Ullapara"]
+        },
+        "Sylhet Division": {
+            "Habiganj District": ["Ajmiriganj", "Bahubal", "Baniachong", "Chunarughat", "Habiganj Sadar", "Lakhai", "Madhabpur", "Nabiganj", "Shayestaganj"],
+            "Moulvibazar District": ["Baralekha", "Juri", "Kamalganj", "Kulaura", "Moulvibazar Sadar", "Rajnagar", "Srimangal"],
+            "Sunamganj District": ["Bishwambharpur", "Chhatak", "Dirai", "Dharmapasha", "Doarabazar", "Jagannathpur", "Jamalganj", "Shalla", "Sunamganj Sadar", "Tahirpur"],
+            "Sylhet District": ["Balaganj", "Beanibazar", "Bishwanath", "Companiganj", "South Surma", "Fenchuganj", "Golapganj", "Gowainghat", "Jaintapur", "Kanaighat", "Sylhet Sadar", "Zakiganj", "Osmani Nagar"]
+        },
+        "Rangpur Division": {
+            "Dinajpur District": ["Birampur", "Birganj", "Biral", "Bochaganj", "Chirirbandar", "Phulbari", "Ghoraghat", "Hakimpur", "Kaharol", "Khansama", "Nawabganj", "Parbatipur", "Dinajpur Sadar"],
+            "Gaibandha District": ["Fulchhari", "Gaibandha Sadar", "Gobindaganj", "Palashbari", "Sadullapur", "Saghata", "Sundarganj"],
+            "Kurigram District": ["Phulbari", "Bhurungamari", "Char Rajibpur", "Chilmari", "Kurigram Sadar", "Nageshwari", "Rajarhat", "Roumari", "Ulipur"],
+            "Lalmonirhat District": ["Aditmari", "Hatibandha", "Kaliganj", "Lalmonirhat Sadar", "Patgram"],
+            "Nilphamari District": ["Domar", "Jaldhaka", "Kishoreganj", "Nilphamari Sadar", "Saidpur", "Dimla"],
+            "Panchagarh District": ["Atwari", "Boda", "Debiganj", "Panchagarh Sadar", "Tentulia"],
+            "Rangpur District": ["Badarganj", "Kaunia", "Rangpur Sadar", "Mithapukur", "Pirgachha", "Pirganj", "Taraganj", "Gangachara"],
+            "Thakurgaon District": ["Pirganj", "Baliadangi", "Haripur", "Ranishankail", "Thakurgaon Sadar"]
+        },
+        "Mymensingh Division": {
+            "Jamalpur District": ["Bakshiganj", "Dewanganj", "Islampur", "Jamalpur Sadar", "Madarganj", "Melandaha", "Sarishabari"],
+            "Mymensingh District": ["Bhaluka", "Dhobaura", "Fulbaria", "Gafargaon", "Gouripur", "Haluaghat", "Ishwarganj", "Mymensingh Sadar", "Muktagachha", "Nandail", "Phulpur", "Tarakanda", "Trishal"],
+            "Netrakona District": ["Atpara", "Barhatta", "Durgapur", "Khaliajuri", "Kalmakanda", "Kendua", "Madan", "Mohanganj", "Netrakona Sadar", "Purbadhala"],
+            "Sherpur District": ["Jhenaigati", "Nakla", "Nalitabari", "Sherpur Sadar", "Sribardi"]
+        },
+        "Barisal Division": {
+            "Jhalokati District": ["Jhalokati Sadar", "Nalchiti", "Kathalia", "Rajapur"],
+            "Barguna District": ["Amtali", "Bamna", "Barguna Sadar", "Betagi", "Patharghata", "Taltoli"],
+            "Barisal District": ["Agailjhara", "Babuganj", "Bakerganj", "Banaripara", "Gouranadi", "Hijla", "Barisal Sadar", "Mehendiganj", "Muladi", "Ujirpur"],
+            "Bhola District": ["Bhola Sadar", "Borhanuddin", "Daulatkhan", "Lalmohan", "Monpura", "Tajumuddin", "Char Fashion"],
+            "Patuakhali District": ["Bauphal", "Dashmina", "Dumki", "Kalapara", "Mirzaganj", "Patuakhali Sadar", "Rangabali", "Galachipa"],
+            "Pirojpur District": ["Bhandaria", "Kaukhali", "Mathbaria", "Nazirpur", "Pirojpur Sadar", "Nesarabad", "Jiyanagar"]
+        }
+    };
+
+    (function() {
+        var fieldset = document.querySelector('.bd-address-picker');
+        if (!fieldset) return;
+
+        var streetRow = fieldset.querySelector('.form-row.field-address_street');
+        var divRow = fieldset.querySelector('.form-row.field-address_division');
+        var distRow = fieldset.querySelector('.form-row.field-address_district');
+        var upzRow = fieldset.querySelector('.form-row.field-address_upazila');
+        if (!divRow || !distRow || !upzRow) return;
+
+        var divInput = divRow.querySelector('input');
+        var distInput = distRow.querySelector('input');
+        var upzInput = upzRow.querySelector('input');
+
+        var wrapper = document.createElement('div');
+        wrapper.style.cssText = 'padding:8px 0 0;';
+
+        function makeGroup(labelText, options, currentVal) {
+            var group = document.createElement('div');
+            group.style.cssText = 'margin-bottom:14px;';
+            var label = document.createElement('label');
+            label.textContent = labelText;
+            label.style.cssText = 'display:block;margin-bottom:4px;font-weight:600;color:#555;font-size:11.5px;text-transform:uppercase;letter-spacing:0.3px;';
+            var select = document.createElement('select');
+            select.style.cssText = 'width:100%;padding:9px 10px;font-size:14px;border:1px solid #ccc;border-radius:4px;background:#fff;box-sizing:border-box;';
+            var ph = document.createElement('option');
+            ph.value = '';
+            ph.textContent = '-- Choose ' + labelText + ' --';
+            ph.disabled = true;
+            ph.selected = true;
+            select.appendChild(ph);
+            options.forEach(function(o) {
+                var opt = document.createElement('option');
+                opt.value = o;
+                opt.textContent = o;
+                if (o === currentVal) opt.selected = true;
+                select.appendChild(opt);
+            });
+            group.appendChild(label);
+            group.appendChild(select);
+            return group;
+        }
+
+        var divVal = divInput ? divInput.value : '';
+        var distVal = distInput ? distInput.value : '';
+        var upzVal = upzInput ? upzInput.value : '';
+
+        var divGroup = makeGroup('Division', Object.keys(ADMIN_BD_DATA), divVal);
+        var distGroup = makeGroup('District', [], distVal);
+        var upzGroup = makeGroup('Upazila', [], upzVal);
+
+        var divSel = divGroup.querySelector('select');
+        var distSel = distGroup.querySelector('select');
+        var upzSel = upzGroup.querySelector('select');
+
+        function populateDistricts() {
+            distSel.innerHTML = '<option value="" disabled selected>-- Choose District --</option>';
+            upzSel.innerHTML = '<option value="" disabled selected>-- Choose Upazila --</option>';
+            upzSel.disabled = true;
+            if (divSel.value && ADMIN_BD_DATA[divSel.value]) {
+                Object.keys(ADMIN_BD_DATA[divSel.value]).forEach(function(d) {
+                    var opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d;
+                    if (d === distVal) opt.selected = true;
+                    distSel.appendChild(opt);
+                });
+                distSel.disabled = false;
+            } else {
+                distSel.disabled = true;
+            }
+        }
+
+        function populateUpazilas() {
+            upzSel.innerHTML = '<option value="" disabled selected>-- Choose Upazila --</option>';
+            if (divSel.value && distSel.value && ADMIN_BD_DATA[divSel.value] && ADMIN_BD_DATA[divSel.value][distSel.value]) {
+                ADMIN_BD_DATA[divSel.value][distSel.value].forEach(function(u) {
+                    var opt = document.createElement('option');
+                    opt.value = u;
+                    opt.textContent = u;
+                    if (u === upzVal) opt.selected = true;
+                    upzSel.appendChild(opt);
+                });
+                upzSel.disabled = false;
+            } else {
+                upzSel.disabled = true;
+            }
+        }
+
+        if (divVal) populateDistricts();
+        if (divVal && distVal) populateUpazilas();
+
+        divSel.addEventListener('change', function() {
+            if (divInput) divInput.value = this.value;
+            distVal = '';
+            upzVal = '';
+            if (distInput) distInput.value = '';
+            if (upzInput) upzInput.value = '';
+            populateDistricts();
+        });
+
+        distSel.addEventListener('change', function() {
+            if (distInput) distInput.value = this.value;
+            upzVal = '';
+            if (upzInput) upzInput.value = '';
+            populateUpazilas();
+        });
+
+        upzSel.addEventListener('change', function() {
+            if (upzInput) upzInput.value = this.value;
+        });
+
+        wrapper.appendChild(divGroup);
+        wrapper.appendChild(distGroup);
+        wrapper.appendChild(upzGroup);
+
+        if (streetRow) {
+            streetRow.parentNode.insertBefore(wrapper, streetRow.nextSibling);
+        } else {
+            var firstRow = fieldset.querySelector('.form-row');
+            if (firstRow) {
+                firstRow.parentNode.insertBefore(wrapper, firstRow.nextSibling);
+            } else {
+                fieldset.appendChild(wrapper);
+            }
+        }
+    })();
+})();
+</script>
+{% endblock %}

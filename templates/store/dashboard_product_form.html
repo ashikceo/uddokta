@@ -1,0 +1,824 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if product %}Edit Product{% else %}Add Product{% endif %} - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_products' %}">Products</a> / <span>{% if product %}Edit{% else %}Add{% endif %} Product</span>
+    </div>
+    <div class="page-header">
+        <h1>{% if product %}Edit Product{% else %}Add Product{% endif %}</h1>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+<style>
+.preset-colors-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:8px; margin-bottom:8px; }
+.preset-color { position:relative; height:52px; border-radius:8px; display:flex; align-items:flex-end; justify-content:center; cursor:pointer; border:2px solid transparent; transition:all 0.15s; overflow:hidden; }
+.preset-color:hover { transform:translateY(-2px); box-shadow:0 3px 10px rgba(0,0,0,0.15); }
+.preset-color.light-border { border-color:#ddd; }
+.preset-color.selected { border-color:#e74847; box-shadow:0 0 0 2px #e74847; }
+.preset-color.selected::after { content:'✓'; position:absolute; top:3px; right:5px; color:#e74847; font-weight:700; font-size:14px; }
+.preset-label { background:rgba(0,0,0,0.55); color:#fff; font-size:10px; padding:2px 6px; border-radius:4px; margin-bottom:4px; font-weight:500; text-shadow:0 1px 2px rgba(0,0,0,0.3); white-space:nowrap; }
+.preset-other { background:#f5f5f5 !important; border:2px dashed #ccc; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+.preset-other .preset-label { background:#888; }
+.preset-other:hover { border-color:#e74847; }
+.selected-color-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border:1px solid #eee; border-radius:8px; margin-bottom:6px; background:#fafafa; }
+.selected-color-item .sci-swatch { width:32px; height:32px; border-radius:6px; flex-shrink:0; }
+.selected-color-item .sci-name { font-weight:600; font-size:13px; min-width:80px; color:#333; }
+.selected-color-item .sci-fields { display:flex; align-items:center; gap:4px; }
+.selected-color-item .sci-fields label { font-size:10px; color:#888; white-space:nowrap; }
+.selected-color-item .btn-remove-variant { background:none; border:none; color:#ccc; font-size:20px; cursor:pointer; padding:0 4px; line-height:1; }
+.selected-color-item .btn-remove-variant:hover { color:#e74847; }
+
+.preset-size-btn { display:inline-block; padding:8px 18px; margin:4px; border:2px solid #ddd; border-radius:6px; background:#fff; cursor:pointer; font-size:14px; font-weight:500; transition:all 0.15s; }
+.preset-size-btn:hover { border-color:#007bff; background:#e7f1ff; }
+.preset-size-btn.selected { border-color:#e74847; background:#fff5f5; }
+
+.selected-size-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border:1px solid #eee; border-radius:8px; margin-bottom:6px; background:#fafafa; }
+.selected-size-item .si-name { font-weight:600; font-size:13px; min-width:60px; color:#333; }
+.selected-size-item .si-fields { display:flex; align-items:center; gap:4px; }
+.selected-size-item .si-fields label { font-size:10px; color:#888; white-space:nowrap; }
+</style>
+
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+    <div class="dashboard-form-container">
+        <form method="POST" enctype="multipart/form-data" id="productForm" novalidate>
+            {% csrf_token %}
+
+            <div class="dashboard-form-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-info"></i></div>
+                    <div>
+                        <h3>Basic Information</h3>
+                        <p>Product name, category, and label</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="form-group">
+                        <label>Product Name <span class="required">*</span></label>
+                        <input type="text" name="name" class="form-control" value="{{ product.name|default:'' }}" required placeholder="Enter product name" id="id_name">
+                    </div>
+                    <div class="form-group">
+                        <label>SKU (Stock Keeping Unit)</label>
+                        <input type="text" name="sku" class="form-control" value="{{ product.sku|default:'' }}" placeholder="e.g. PROD-001">
+                        <div class="help-text">Unique product code for inventory tracking.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Barcode</label>
+                        <input type="text" name="barcode" class="form-control" value="{{ product.barcode|default:'' }}" placeholder="e.g. 8901234567890" id="id_barcode">
+                        <div class="help-text">UPC / EAN / QR code for POS scanning. Searchable at checkout.</div>
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="category" class="form-control">
+                                <option value="">-- Select Category --</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if product.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Label</label>
+                            <select name="label" class="form-control">
+                                <option value="">-- None --</option>
+                                <option value="new" {% if product.label == 'new' %}selected{% endif %}>New</option>
+                                <option value="hot" {% if product.label == 'hot' %}selected{% endif %}>Hot Item</option>
+                                <option value="discounted" {% if product.label == 'discounted' %}selected{% endif %}>Discounted</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if partner.shop_style == 'medicine' %}
+            <div class="dashboard-form-section" id="medicine-fields-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-medkit"></i></div>
+                    <div>
+                        <h3>Medicine Information</h3>
+                        <p>Brand name, generic name, strength, and dosage form</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Brand Name</label>
+                            <input type="text" name="medicine_brand_name" class="form-control" value="{{ product.medicine_brand_name|default:'' }}" placeholder="e.g. Napa, Fexo, Rivotril">
+                        </div>
+                        <div class="form-group">
+                            <label>Generic Name <span style="font-weight:400;color:#999;font-size:11px;">(active ingredient)</span></label>
+                            <input type="text" name="medicine_generic_name" class="form-control" value="{{ product.medicine_generic_name|default:'' }}" placeholder="e.g. Paracetamol, Fexofenadine">
+                        </div>
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Strength</label>
+                            <input type="text" name="medicine_strength" class="form-control" value="{{ product.medicine_strength|default:'' }}" placeholder="e.g. 500 mg, 120 mg">
+                        </div>
+                        <div class="form-group">
+                            <label>Dosage Form</label>
+                            <input type="text" name="medicine_dosage_form" class="form-control" value="{{ product.medicine_dosage_form|default:'' }}" placeholder="e.g. Tablet, Syrup, Capsule">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="dashboard-form-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-align-left"></i></div>
+                    <div>
+                        <h3>Short Description</h3>
+                        <p>A brief summary shown on the product page above the fold</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="form-group">
+                        <label>Short Description <span style="font-weight:400; color:#999; font-size:11px;">(max 300 characters)</span></label>
+                        <input type="text" name="short_description" class="form-control" value="{{ product.short_description|default:'' }}" placeholder="Brief summary of the product..." maxlength="300" id="id_short_description">
+                        <div class="char-counter" id="shortDescCounter">0 / 300</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-form-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-shopping-bag"></i></div>
+                    <div>
+                        <h3>Sale Unit</h3>
+                        <p>How this product is sold</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="form-group">
+                        <label>Unit Type</label>
+                        <select name="sale_unit" class="form-control" id="saleUnitSelect">
+                            <option value="piece" {% if product.sale_unit == 'piece' or not product %}selected{% endif %}>Piece (1 piece)</option>
+                            <option value="kg" {% if product.sale_unit == 'kg' %}selected{% endif %}>Kg (1 kg)</option>
+                            <option value="liter" {% if product.sale_unit == 'liter' %}selected{% endif %}>Liter (1 liter)</option>
+                            <option value="dozen" {% if product.sale_unit == 'dozen' %}selected{% endif %}>Dozen (1 dozen)</option>
+                            <option value="pack" {% if product.sale_unit == 'pack' %}selected{% endif %}>Pack (1 pack)</option>
+                            <option value="box" {% if product.sale_unit == 'box' %}selected{% endif %}>Box (1 box)</option>
+                            <option value="custom" {% if product.sale_unit == 'custom' %}selected{% endif %}>Custom</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="customUnitGroup" style="{% if product.sale_unit != 'custom' and product %}display:none;{% elif not product %}display:none;{% endif %}">
+                        <label>Custom Unit Label</label>
+                        <input type="text" name="custom_unit_label" class="form-control" value="{{ product.custom_unit_label|default:'' }}" placeholder="e.g. Sack, Bundle, Box of 6">
+                        <div class="help-text">Will show as "1 [label]" on the product page</div>
+                    </div>
+                    <div class="help-text" style="margin-top:8px;">Example: "৳ 500 / Kg" or "৳ 120 / Piece"</div>
+                </div>
+            </div>
+
+            <div class="dashboard-form-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-tags"></i></div>
+                    <div>
+                        <h3>Pricing &amp; Stock</h3>
+                        <p>Set your prices and inventory</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Price <span class="required">*</span></label>
+                            <input type="number" step="0.01" name="price" class="form-control" value="{{ product.price|default:'' }}" required placeholder="0.00" id="id_price">
+                            <div class="help-text">Regular selling price</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Cost Price (wholesale)</label>
+                            <input type="number" step="0.01" name="cost_price" class="form-control" value="{{ product.cost_price|default:'' }}" placeholder="What you paid per unit">
+                            <div class="help-text">Your purchase cost. Profit = Price − Cost Price</div>
+                        </div>
+                    </div>
+                    <div class="form-row-2" style="margin-top:16px;">
+                        <div class="form-group">
+                            <label>Old Price</label>
+                            <input type="number" step="0.01" name="old_price" class="form-control" value="{{ product.old_price|default:'' }}" placeholder="For discount display">
+                            <div class="help-text">Shows as strikethrough next to the sale price</div>
+                        </div>
+                    </div>
+                    <div class="form-row-2" style="margin-top:16px;">
+                        <div class="form-group">
+                            <label>Stock Quantity</label>
+                            <input type="number" name="stock" class="form-control" value="{{ product.stock|default:'0' }}" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Low Stock Threshold</label>
+                            <input type="number" name="low_stock_threshold" class="form-control" value="{{ product.low_stock_threshold|default:'5' }}" placeholder="5" min="0">
+                            <div class="help-text">Alert when stock falls below this number</div>
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div style="padding-top:6px;">
+                                <div class="toggle-wrapper">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="available" {% if product.available or not product %}checked{% endif %}>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="toggle-label">Available for sale</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top:16px; padding-top:16px; border-top:1px solid #eee;">
+                        <div class="toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="price_on_request" {% if product.price_on_request %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="toggle-label">Price on Request</span>
+                        </div>
+                        <div class="help-text" style="margin-top:4px;">When enabled, shows "Price on Request" instead of the fixed price. Buyers contact you for pricing.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-form-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-arrows"></i></div>
+                    <div>
+                        <h3>Weight &amp; Dimensions</h3>
+                        <p>Physical specifications for shipping</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Weight</label>
+                            <input type="number" step="0.01" name="weight" class="form-control" value="{{ product.weight|default:'' }}" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Weight Unit</label>
+                            <select name="weight_unit" class="form-control">
+                                <option value="kg" {% if product.weight_unit == 'kg' or not product %}selected{% endif %}>Kg</option>
+                                <option value="g" {% if product.weight_unit == 'g' %}selected{% endif %}>Gram</option>
+                                <option value="lb" {% if product.weight_unit == 'lb' %}selected{% endif %}>Lb</option>
+                                <option value="oz" {% if product.weight_unit == 'oz' %}selected{% endif %}>Oz</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row-2" style="margin-top:16px;">
+                        <div class="form-group">
+                            <label>Length</label>
+                            <input type="number" step="0.01" name="length" class="form-control" value="{{ product.length|default:'' }}" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Width</label>
+                            <input type="number" step="0.01" name="width" class="form-control" value="{{ product.width|default:'' }}" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="form-row-2" style="margin-top:16px;">
+                        <div class="form-group">
+                            <label>Height</label>
+                            <input type="number" step="0.01" name="height" class="form-control" value="{{ product.height|default:'' }}" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Dimension Unit</label>
+                            <select name="dimension_unit" class="form-control">
+                                <option value="cm" {% if product.dimension_unit == 'cm' or not product %}selected{% endif %}>Cm</option>
+                                <option value="inch" {% if product.dimension_unit == 'inch' %}selected{% endif %}>Inch</option>
+                                <option value="m" {% if product.dimension_unit == 'm' %}selected{% endif %}>Meter</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-form-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-image"></i></div>
+                    <div>
+                        <h3>Media</h3>
+                        <p>Product images and video</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Product Image</label>
+                            <input type="file" name="image" class="form-control" accept="image/*" id="id_image">
+                            {% if product and product.image %}
+                            <div class="existing-image-info">
+                                <img src="{{ product.image.url }}" alt="Current">
+                                <a href="{{ product.image.url }}" target="_blank">{{ product.image.name }}</a>
+                            </div>
+                            {% endif %}
+                            <div class="image-preview-wrapper" id="imagePreview">
+                                <div class="preview-label">Preview:</div>
+                                <img src="" alt="Preview">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Hover Image</label>
+                            <input type="file" name="hover_image" class="form-control" accept="image/*" id="id_hover_image">
+                            {% if product and product.hover_image %}
+                            <div class="existing-image-info">
+                                <img src="{{ product.hover_image.url }}" alt="Current">
+                                <a href="{{ product.hover_image.url }}" target="_blank">{{ product.hover_image.name }}</a>
+                            </div>
+                            {% endif %}
+                            <div class="image-preview-wrapper" id="hoverImagePreview">
+                                <div class="preview-label">Preview:</div>
+                                <img src="" alt="Preview">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top:16px;">
+                        <label>Extra Images <span style="font-weight:400; color:#999; font-size:11px;">(add as many as you want)</span></label>
+                        <input type="file" name="extra_images" class="form-control" accept="image/*" multiple id="id_extra_images">
+                        <div class="help-text">You can select multiple images at once. These will appear in the product gallery.</div>
+                        {% if product and product.extra_images.exists %}
+                        <div class="extra-images-grid" id="existingExtraImages">
+                            {% for img in product.extra_images.all %}
+                            <div class="extra-image-item" data-id="{{ img.id }}">
+                                <img src="{{ img.image.url }}" alt="">
+                                <label class="extra-image-delete" title="Remove this image">
+                                    <input type="checkbox" name="delete_extra" value="{{ img.id }}">
+                                    <span class="delete-icon">&times;</span>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="extra_delete_ids" id="extraDeleteIds" value="">
+                        {% endif %}
+                        <div class="new-images-preview" id="newImagesPreview"></div>
+                    </div>
+                    <div class="form-group" style="margin-top:16px;">
+                        <label>YouTube Video URL</label>
+                        <input type="url" name="video_url" class="form-control" value="{{ product.video_url|default:'' }}" placeholder="https://www.youtube.com/watch?v=...">
+                        <div class="help-text">Optional. Supports regular YouTube links, Shorts, and youtu.be links.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-form-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-paint-brush"></i></div>
+                    <div>
+                        <h3>Color Variants</h3>
+                        <p>Color options for this product (optional)</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <label style="font-weight:600;font-size:14px;margin-bottom:10px;display:block;">Click a color to add it, or use <strong>Other</strong> for custom colors:</label>
+                    <div class="preset-colors-grid">
+                        {% for hex, name in preset_colors %}
+                        <div class="preset-color{% if hex == '#FFFFFF' or hex == '#FFD700' or hex == '#87CEEB' or hex == '#FF69B4' or hex == '#EE82EE' or hex == '#FF7F50' or hex == '#DAA520' or hex == '#C0C0C0' or hex == '#32CD32' or hex == '#FF8C00' %} light-border{% endif %}" data-code="{{ hex }}" data-name="{{ name }}" style="background:{{ hex }};" onclick="togglePresetColor(this)">
+                            <span class="preset-label">{{ name }}</span>
+                        </div>
+                        {% endfor %}
+                        <div class="preset-color preset-other" onclick="showCustomInput()">
+                            <i class="fa fa-plus" style="font-size:16px;"></i>
+                            <span class="preset-label">Other</span>
+                        </div>
+                    </div>
+
+                    <div id="customColorInput" style="display:none;margin-top:12px;padding:14px;border:2px dashed #ddd;border-radius:8px;">
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <input type="text" id="customColorName" placeholder="Enter color name (e.g. Midnight Blue)" style="flex:1;min-width:160px;padding:8px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
+                            <input type="color" id="customColorCode" value="#000000" style="width:40px;height:40px;border:none;cursor:pointer;border-radius:4px;">
+                            <button type="button" class="btn btn-primary" onclick="addCustomColor()" style="font-size:12px;padding:8px 16px;">Add Color</button>
+                            <button type="button" class="btn btn-outline" onclick="hideCustomInput()" style="font-size:12px;padding:8px 16px;">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div id="selectedColorsList" style="margin-top:15px;">
+                        {% if color_variants %}
+                        {% for v in color_variants %}
+                        <div class="selected-color-item" data-name="{{ v.color_name }}" data-code="{{ v.color_code }}">
+                            <div class="sci-swatch" style="background:{{ v.color_code }};{% if v.color_code == '#FFFFFF' or v.color_code == '#FFD700' or v.color_code == '#87CEEB' or v.color_code == '#FF69B4' or v.color_code == '#EE82EE' or v.color_code == '#FF7F50' or v.color_code == '#DAA520' or v.color_code == '#C0C0C0' or v.color_code == '#32CD32' or v.color_code == '#FF8C00' %}border:1px solid #ddd;{% endif %}"></div>
+                            <span class="sci-name">{{ v.color_name }}</span>
+                            <div class="sci-fields">
+                                <label>Price Adj.</label>
+                                <input type="number" step="0.01" name="color_price" value="{{ v.price_adjustment|default:'0' }}" placeholder="0.00" class="form-control" style="width:80px;padding:4px 6px;font-size:12px;">
+                            </div>
+                            <div class="sci-fields">
+                                <label>Stock</label>
+                                <input type="number" name="color_stock" value="{{ v.stock|default:'0' }}" placeholder="0" class="form-control" style="width:60px;padding:4px 6px;font-size:12px;" min="0">
+                            </div>
+                            <div class="sci-fields">
+                                <label>Image</label>
+                                <input type="file" name="color_image" accept="image/*" class="form-control" style="width:130px;padding:4px 6px;font-size:11px;">
+                                {% if v.image %}
+                                <div class="color-variant-preview" style="display:inline-block;margin-left:4px;"><img src="{{ v.image.url }}" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:4px;"></div>
+                                {% endif %}
+                            </div>
+                            <button type="button" class="btn-remove-variant" onclick="removeSelectedColor(this)" title="Remove">&times;</button>
+                            <input type="hidden" name="color_id" value="{{ v.id }}">
+                            <input type="hidden" name="color_name" value="{{ v.color_name }}">
+                            <input type="hidden" name="color_code" value="{{ v.color_code }}">
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <div id="colorVariantsContainer" style="display:none;"></div>
+
+                    <div id="colorVariantTemplate" style="display:none;">
+                        <div class="selected-color-item" data-name="" data-code="">
+                            <div class="sci-swatch" style="background:#000;"></div>
+                            <span class="sci-name"></span>
+                            <div class="sci-fields">
+                                <label>Price Adj.</label>
+                                <input type="number" step="0.01" name="color_price" value="0" placeholder="0.00" class="form-control" style="width:80px;padding:4px 6px;font-size:12px;">
+                            </div>
+                            <div class="sci-fields">
+                                <label>Stock</label>
+                                <input type="number" name="color_stock" value="0" placeholder="0" class="form-control" style="width:60px;padding:4px 6px;font-size:12px;" min="0">
+                            </div>
+                            <div class="sci-fields">
+                                <label>Image</label>
+                                <input type="file" name="color_image" accept="image/*" class="form-control" style="width:130px;padding:4px 6px;font-size:11px;">
+                            </div>
+                            <button type="button" class="btn-remove-variant" onclick="removeSelectedColor(this)" title="Remove">&times;</button>
+                            <input type="hidden" name="color_id" value="">
+                            <input type="hidden" name="color_name" value="">
+                            <input type="hidden" name="color_code" value="">
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="color_delete_ids" id="colorDeleteIds" value="">
+                </div>
+            </div>
+
+            <div class="dashboard-form-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-arrows-h"></i></div>
+                    <div>
+                        <h3>Size Variants</h3>
+                        <p>Size options for this product (optional)</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <label style="font-weight:600;font-size:14px;margin-bottom:10px;display:block;">Click preset sizes to add, or enter a custom size:</label>
+                    <div id="presetSizesContainer">
+                        {% for size in preset_sizes %}
+                        <button type="button" class="preset-size-btn" data-size="{{ size }}" onclick="togglePresetSize(this)">{{ size }}</button>
+                        {% endfor %}
+                    </div>
+
+                    <div style="margin-top:12px;display:flex;gap:8px;">
+                        <input type="text" id="customSizeName" placeholder="Custom size (e.g. XXL, 4XL)" style="flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
+                        <button type="button" class="btn btn-primary" onclick="addCustomSize()" style="font-size:12px;padding:8px 16px;">Add Size</button>
+                    </div>
+
+                    <div id="selectedSizesList" style="margin-top:15px;">
+                        {% if size_variants %}
+                        {% for v in size_variants %}
+                        <div class="selected-size-item" data-size="{{ v.size_name }}">
+                            <span class="si-name">{{ v.size_name }}</span>
+                            <div class="si-fields">
+                                <label>Price Adj.</label>
+                                <input type="number" step="0.01" name="size_price" value="{{ v.price_adjustment|default:'0' }}" placeholder="0.00" class="form-control" style="width:80px;padding:4px 6px;font-size:12px;">
+                            </div>
+                            <div class="si-fields">
+                                <label>Stock</label>
+                                <input type="number" name="size_stock" value="{{ v.stock|default:'0' }}" placeholder="0" class="form-control" style="width:60px;padding:4px 6px;font-size:12px;" min="0">
+                            </div>
+                            <button type="button" class="btn-remove-variant" onclick="removeSelectedSize(this)" title="Remove">&times;</button>
+                            <input type="hidden" name="size_id" value="{{ v.id }}">
+                            <input type="hidden" name="size_name" value="{{ v.size_name }}">
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <div id="sizeVariantTemplate" style="display:none;">
+                        <div class="selected-size-item" data-size="">
+                            <span class="si-name"></span>
+                            <div class="si-fields">
+                                <label>Price Adj.</label>
+                                <input type="number" step="0.01" name="size_price" value="0" placeholder="0.00" class="form-control" style="width:80px;padding:4px 6px;font-size:12px;">
+                            </div>
+                            <div class="si-fields">
+                                <label>Stock</label>
+                                <input type="number" name="size_stock" value="0" placeholder="0" class="form-control" style="width:60px;padding:4px 6px;font-size:12px;" min="0">
+                            </div>
+                            <button type="button" class="btn-remove-variant" onclick="removeSelectedSize(this)" title="Remove">&times;</button>
+                            <input type="hidden" name="size_id" value="">
+                            <input type="hidden" name="size_name" value="">
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="size_delete_ids" id="sizeDeleteIds" value="">
+                </div>
+            </div>
+
+            <div class="dashboard-form-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-file-text"></i></div>
+                    <div>
+                        <h3>Full Description</h3>
+                        <p>Detailed product description shown in the Description tab</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="form-group">
+                        <div id="description-editor" style="min-height:320px;"></div>
+                        <textarea name="description" id="description-hidden" style="display:none">{{ product.description|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">{% if product %}<i class="fa fa-save"></i> Update Product{% else %}<i class="fa fa-plus-circle"></i> Add Product{% endif %}</button>
+                <a href="{% url 'dashboard_products' %}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<script>
+(function() {
+    // Char counter for short description
+    var shortDesc = document.getElementById('id_short_description');
+    var counter = document.getElementById('shortDescCounter');
+    if (shortDesc && counter) {
+        function updateCounter() {
+            var len = shortDesc.value.length;
+            counter.textContent = len + ' / 300';
+            counter.classList.remove('warning', 'danger');
+            if (len > 280) counter.classList.add('danger');
+            else if (len > 250) counter.classList.add('warning');
+        }
+        shortDesc.addEventListener('input', updateCounter);
+        updateCounter();
+    }
+
+    // Image preview
+    function setupImagePreview(inputId, previewId) {
+        var input = document.getElementById(inputId);
+        var wrapper = document.getElementById(previewId);
+        if (!input || !wrapper) return;
+        input.addEventListener('change', function() {
+            var file = this.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    wrapper.classList.add('active');
+                    wrapper.querySelector('img').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                wrapper.classList.remove('active');
+                wrapper.querySelector('img').src = '';
+            }
+        });
+    }
+    setupImagePreview('id_image', 'imagePreview');
+    setupImagePreview('id_hover_image', 'hoverImagePreview');
+
+    // Sale unit toggle custom label
+    var saleUnitSelect = document.getElementById('saleUnitSelect');
+    var customUnitGroup = document.getElementById('customUnitGroup');
+    if (saleUnitSelect && customUnitGroup) {
+        function toggleCustomUnit() {
+            if (saleUnitSelect.value === 'custom') {
+                customUnitGroup.style.display = 'block';
+            } else {
+                customUnitGroup.style.display = 'none';
+            }
+        }
+        saleUnitSelect.addEventListener('change', toggleCustomUnit);
+    }
+
+    // Color variants — preset swatches
+    var deleteIdsInput = document.getElementById('colorDeleteIds');
+    var selectedList = document.getElementById('selectedColorsList');
+    var templateItem = document.getElementById('colorVariantTemplate');
+    var colorIndex = (selectedList ? selectedList.querySelectorAll('.selected-color-item').length : 0);
+
+    // On load: mark preset swatches that match already-selected colors
+    document.querySelectorAll('.selected-color-item').forEach(function(item) {
+        var code = item.getAttribute('data-code');
+        document.querySelectorAll('.preset-color[data-code="' + CSS.escape(code) + '"]').forEach(function(el) {
+            el.classList.add('selected');
+        });
+    });
+
+    function togglePresetColor(el) {
+        var code = el.getAttribute('data-code');
+        var name = el.getAttribute('data-name');
+        if (el.classList.contains('selected')) {
+            // Deselect — remove matching selected item
+            el.classList.remove('selected');
+            var items = selectedList.querySelectorAll('.selected-color-item');
+            items.forEach(function(item) {
+                if (item.getAttribute('data-code') === code && !item._custom) {
+                    doRemoveItem(item);
+                }
+            });
+        } else {
+            // Select — add to selected list
+            el.classList.add('selected');
+            addColorToList(code, name, null);
+        }
+    }
+
+    function addColorToList(code, name, existingId) {
+        var clone = templateItem.querySelector('.selected-color-item').cloneNode(true);
+        clone.setAttribute('data-code', code);
+        clone.setAttribute('data-name', name);
+        clone.querySelector('.sci-swatch').style.background = code;
+        if (code === '#FFFFFF' || code === '#FFD700' || code === '#87CEEB' || code === '#FF69B4' || code === '#EE82EE' || code === '#FF7F50' || code === '#DAA520' || code === '#C0C0C0' || code === '#32CD32' || code === '#FF8C00') {
+            clone.querySelector('.sci-swatch').style.border = '1px solid #ddd';
+        }
+        clone.querySelector('.sci-name').textContent = name;
+        clone.querySelector('input[name="color_name"]').value = name;
+        clone.querySelector('input[name="color_code"]').value = code;
+        if (existingId) {
+            clone.querySelector('input[name="color_id"]').value = existingId;
+        }
+        // Set file input name with index
+        clone.querySelector('input[type="file"]').name = 'color_image_' + colorIndex;
+        colorIndex++;
+        selectedList.appendChild(clone);
+    }
+
+    function showCustomInput() {
+        document.getElementById('customColorInput').style.display = 'block';
+    }
+
+    function hideCustomInput() {
+        document.getElementById('customColorInput').style.display = 'none';
+        document.getElementById('customColorName').value = '';
+    }
+
+    function addCustomColor() {
+        var name = document.getElementById('customColorName').value.trim();
+        var code = document.getElementById('customColorCode').value;
+        if (!name) { alert('Please enter a color name.'); return; }
+        addColorToList(code, name, null);
+        // Mark as custom so preset deselection doesn't remove it
+        var items = selectedList.querySelectorAll('.selected-color-item:last-of-type');
+        if (items.length) items[items.length - 1]._custom = true;
+        hideCustomInput();
+    }
+
+    function removeSelectedColor(btn) {
+        var item = btn.closest('.selected-color-item');
+        var code = item.getAttribute('data-code');
+        // Uncheck preset swatch
+        document.querySelectorAll('.preset-color[data-code="' + CSS.escape(code) + '"]').forEach(function(el) {
+            el.classList.remove('selected');
+        });
+        doRemoveItem(item);
+    }
+
+    function doRemoveItem(item) {
+        var idInput = item.querySelector('input[name="color_id"]');
+        if (idInput && idInput.value && idInput.value !== '') {
+            var existing = deleteIdsInput.value;
+            deleteIdsInput.value = existing ? existing + ',' + idInput.value : idInput.value;
+        }
+        item.parentNode.removeChild(item);
+    }
+
+    // Size variants
+    var sizeDeleteIdsInput = document.getElementById('sizeDeleteIds');
+    var sizeSelectedList = document.getElementById('selectedSizesList');
+    var sizeTemplateItem = document.getElementById('sizeVariantTemplate');
+
+    function togglePresetSize(btn) {
+        var size = btn.getAttribute('data-size');
+        if (btn.classList.contains('selected')) {
+            btn.classList.remove('selected');
+            var items = sizeSelectedList.querySelectorAll('.selected-size-item');
+            items.forEach(function(item) {
+                if (item.getAttribute('data-size') === size) {
+                    doRemoveSizeItem(item);
+                }
+            });
+        } else {
+            btn.classList.add('selected');
+            addSizeToList(size, null);
+        }
+    }
+
+    function addSizeToList(size, existingId) {
+        var clone = sizeTemplateItem.querySelector('.selected-size-item').cloneNode(true);
+        clone.setAttribute('data-size', size);
+        clone.querySelector('.si-name').textContent = size;
+        clone.querySelector('input[name="size_name"]').value = size;
+        if (existingId) {
+            clone.querySelector('input[name="size_id"]').value = existingId;
+        }
+        sizeSelectedList.appendChild(clone);
+    }
+
+    function addCustomSize() {
+        var name = document.getElementById('customSizeName').value.trim();
+        if (!name) { alert('Please enter a size name.'); return; }
+        // Mark preset if it matches
+        document.querySelectorAll('.preset-size-btn[data-size="' + CSS.escape(name) + '"]').forEach(function(el) {
+            el.classList.add('selected');
+        });
+        addSizeToList(name, null);
+        document.getElementById('customSizeName').value = '';
+    }
+
+    function removeSelectedSize(btn) {
+        var item = btn.closest('.selected-size-item');
+        var size = item.getAttribute('data-size');
+        document.querySelectorAll('.preset-size-btn[data-size="' + CSS.escape(size) + '"]').forEach(function(el) {
+            el.classList.remove('selected');
+        });
+        doRemoveSizeItem(item);
+    }
+
+    function doRemoveSizeItem(item) {
+        var idInput = item.querySelector('input[name="size_id"]');
+        if (idInput && idInput.value && idInput.value !== '') {
+            var existing = sizeDeleteIdsInput.value;
+            sizeDeleteIdsInput.value = existing ? existing + ',' + idInput.value : idInput.value;
+        }
+        item.parentNode.removeChild(item);
+    }
+
+    // Expose color and size variant functions globally for onclick handlers
+    window.togglePresetColor = togglePresetColor;
+    window.showCustomInput = showCustomInput;
+    window.hideCustomInput = hideCustomInput;
+    window.addCustomColor = addCustomColor;
+    window.removeSelectedColor = removeSelectedColor;
+    window.togglePresetSize = togglePresetSize;
+    window.addCustomSize = addCustomSize;
+    window.removeSelectedSize = removeSelectedSize;
+
+    // Extra images preview and delete tracking
+    var extraInput = document.getElementById('id_extra_images');
+    var extraPreview = document.getElementById('newImagesPreview');
+    if (extraInput && extraPreview) {
+        extraInput.addEventListener('change', function() {
+            extraPreview.innerHTML = '';
+            for (var i = 0; i < this.files.length; i++) {
+                (function(file) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        var div = document.createElement('div');
+                        div.className = 'new-image-thumb';
+                        div.innerHTML = '<img src="' + e.target.result + '" alt="">';
+                        extraPreview.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                })(this.files[i]);
+            }
+        });
+    }
+
+    var extraDeleteIds = document.getElementById('extraDeleteIds');
+    if (extraDeleteIds) {
+        document.querySelectorAll('input[name="delete_extra"]').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                var checked = document.querySelectorAll('input[name="delete_extra"]:checked');
+                var ids = [];
+                checked.forEach(function(c) { ids.push(c.value); });
+                extraDeleteIds.value = ids.join(',');
+                // Visual feedback
+                document.querySelectorAll('.extra-image-item').forEach(function(item) {
+                    var c = item.querySelector('input[name="delete_extra"]');
+                    if (c && c.checked) {
+                        item.classList.add('checked');
+                    } else {
+                        item.classList.remove('checked');
+                    }
+                });
+            });
+        });
+    }
+})();
+</script>
+<script>
+(function() {
+    var quill = new Quill('#description-editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'blockquote', 'clean']
+            ]
+        }
+    });
+    var hiddenDesc = document.getElementById('description-hidden');
+    if (hiddenDesc && hiddenDesc.value) {
+        quill.root.innerHTML = hiddenDesc.value;
+    }
+    document.getElementById('productForm').addEventListener('submit', function() {
+        hiddenDesc.value = quill.root.innerHTML;
+    });
+})();
+</script>
+{% endblock %}

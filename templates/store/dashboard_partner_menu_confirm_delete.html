@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Menu Item - {{ partner.name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_menu_list' %}">Menu Manager</a> / <span>Delete</span>
+    </div>
+    <div class="page-header"><h1>Delete Menu Item</h1></div>
+
+    <div style="border:1px solid #e74847; padding:20px; max-width:500px;">
+        <p style="font-size:16px; margin-bottom:15px;">Are you sure you want to delete <strong>{{ item.title }}</strong>?</p>
+        {% if item.children.all %}
+        <p style="color:#e74847; margin-bottom:15px;"><i class="fa fa-warning"></i> All sub-menu items under this menu will also be deleted.</p>
+        {% endif %}
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary" style="background:#e74847; border-color:#e74847;"><i class="fa fa-trash"></i> Delete</button>
+            <a href="{% url 'dashboard_menu_list' %}" class="btn btn-outline">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

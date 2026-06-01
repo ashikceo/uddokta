@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shopping Cart - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <span>Shopping Cart</span>
+    </div>
+    <div class="page-header"><h1>Shopping Cart</h1></div>
+    {% if cart and cart.items.exists %}
+        <div style="border:1px solid #eee; padding:20px; border-radius:6px;">
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Product Name</th>
+                    <th>Unit Price</th>
+                    <th>Qty</th>
+                    <th>Subtotal</th>
+                    <th>Remove</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart.items.all %}
+                <tr>
+                    <td class="product-thumb">
+                        {% if item.product.image %}
+                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                        {% else %}
+                        <img src="/static/img/placeholder_60x60.png" alt="{{ item.product.name }}">
+                        {% endif %}
+                    </td>
+                    <td><a href="{% url 'product_detail' item.product.slug %}">{{ item.product.name|truncatechars:50 }}</a>{% if item.color_variant %} <span style="color:#888;font-size:12px;">({{ item.color_variant.color_name }})</span>{% endif %}{% if item.size_variant %} <span style="color:#888;font-size:12px;">[{{ item.size_variant.size_name }}]</span>{% endif %}</td>
+                    <td>৳ {{ item.product.price }}</td>
+                    <td>
+                        <form action="{% url 'update_cart' item.id %}" method="POST" style="display:flex; gap:5px;">
+                            {% csrf_token %}
+                            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="qty-input">
+                            <button type="submit" class="btn btn-outline" style="padding:6px 12px; font-size:11px;">Update</button>
+                        </form>
+                    </td>
+                    <td>৳ {{ item.subtotal }}</td>
+                    <td><a href="{% url 'remove_from_cart' item.id %}" style="color:#e74847;"><i class="fa fa-trash"></i></a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="text-right" style="margin-top:20px;">
+            <h3>Total: ৳ {{ cart.total_amount }}</h3>
+            <a href="{% url 'shop_grid' %}" class="btn btn-outline" style="margin-right:10px;">Continue Shopping</a>
+            <a href="{% url 'checkout' %}" class="btn btn-primary">Proceed to Checkout</a>
+        </div>
+        </div>
+    {% else %}
+    <div style="text-align:center; padding:60px 0;">
+        <i class="fa fa-shopping-cart" style="font-size:48px; color:#ddd; margin-bottom:20px;"></i>
+        <h3>Your cart is empty.</h3>
+        <a href="{% url 'shop_grid' %}" class="btn btn-primary" style="margin-top:15px;">Shop Now</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

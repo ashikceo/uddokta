@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Medicine POS - {{ partner.name }} - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<style>
+body { min-height:100vh; display:flex; flex-direction:column; }
+.pos-layout { flex:1; min-height:0; display:flex; flex-direction:column; padding:0 15px; width:100%; }
+.pos-stats { display:flex; gap:10px; margin-bottom:8px; flex-shrink:0; flex-wrap:wrap; }
+.pos-stats .stat { background:#f8f9fa; border-radius:6px; padding:6px 12px; display:flex; align-items:center; gap:6px; }
+.pos-stats .stat strong { font-size:14px; color:#6f42c1; }
+.pos-stats .stat span { font-size:11px; color:#888; }
+.pos-wrapper { display:flex; gap:15px; flex:1; min-height:0; overflow:hidden; }
+.pos-products { flex:1; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
+.pos-search { width:100%; padding:6px 10px; border:2px solid #6f42c1; border-radius:4px; font-size:13px; outline:none; margin-bottom:8px; flex-shrink:0; }
+.pos-search:focus { border-color:#5a32a3; }
+.pos-grid { flex:1; overflow-y:auto; min-height:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:6px; padding-right:5px; }
+.pos-product { border:1px solid #eee; border-radius:6px; padding:6px; text-align:center; cursor:pointer; transition:all 0.15s; background:#fff; overflow:hidden; }
+.pos-product:hover { border-color:#6f42c1; box-shadow:0 2px 8px rgba(111,66,193,0.15); transform:translateY(-1px); }
+.pos-product .brand { font-size:12px; font-weight:700; color:#6f42c1; line-height:1.2; }
+.pos-product .generic { font-size:10px; color:#888; }
+.pos-product .strength { font-size:11px; color:#555; }
+.pos-product .price { font-size:12px; color:#6f42c1; font-weight:700; }
+.pos-product .stock { font-size:9px; color:#888; }
+.pos-cart { width:380px; flex-shrink:0; display:flex; flex-direction:column; min-height:0; }
+.cart-summary-footer { flex-shrink:0; background:#fff; border-top:1px solid #e0e0e0; padding:10px 12px; }
+.cart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-shrink:0; }
+.cart-header h3 { margin:0; font-size:14px; }
+.cart-items { flex:1; overflow-y:auto; min-height:0; }
+.cart-item { display:flex; align-items:center; gap:6px; padding:4px 0; border-bottom:1px solid #eee; }
+.cart-item .ci-name { flex:1; font-size:12px; font-weight:500; }
+.cart-item .ci-price { font-size:12px; color:#6f42c1; font-weight:600; min-width:50px; text-align:right; }
+.cart-item .ci-qty { display:flex; align-items:center; gap:2px; }
+.cart-item .ci-qty button { width:22px; height:22px; border:1px solid #ddd; border-radius:3px; background:#fff; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; }
+.cart-item .ci-qty button:hover { background:#f5f5f5; }
+.cart-item .ci-qty span { min-width:16px; text-align:center; font-weight:600; font-size:12px; }
+.cart-item .ci-remove { color:#ccc; cursor:pointer; font-size:14px; padding:2px 4px; }
+.cart-item .ci-remove:hover { color:#6f42c1; }
+.cart-empty { text-align:center; padding:20px 0; color:#aaa; }
+.cart-empty i { font-size:36px; margin-bottom:6px; }
+.cart-totals { padding-top:6px; flex-shrink:0; }
+.cart-totals .row { display:flex; justify-content:space-between; padding:2px 0; font-size:12px; }
+.cart-totals .row.total { font-size:15px; font-weight:700; color:#6f42c1; border-top:1px solid #eee; padding-top:4px; margin-top:2px; }
+.cart-totals .row label { color:#666; }
+.price-box { text-align:right; white-space:nowrap; }
+.price-box input[type=number] { width:70px; padding:2px 4px; border:1px solid #ddd; border-radius:3px; text-align:right; font-size:12px; }
+.cart-customer { margin-top:6px; flex-shrink:0; }
+.cart-customer input { width:100%; padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:12px; margin-bottom:4px; }
+.cart-payment { margin-top:6px; }
+.cart-payment select { width:100%; padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:12px; }
+.cart-checkout { width:100%; padding:8px; background:#6f42c1; color:#fff; border:none; border-radius:4px; font-size:14px; font-weight:600; cursor:pointer; margin-top:8px; }
+.cart-checkout:hover { background:#5a32a3; }
+.cart-checkout:disabled { background:#ccc; cursor:not-allowed; }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+.modal-overlay.show { display:flex; }
+.modal-box { background:#fff; border-radius:12px; padding:30px; max-width:420px; width:90%; text-align:center; }
+.modal-box h2 { margin:0 0 10px; }
+.modal-box .invoice-num { font-size:24px; color:#6f42c1; font-weight:700; margin:10px 0; }
+#pos-toast { position:fixed; bottom:20px; right:20px; background:#333; color:#fff; padding:8px 16px; border-radius:4px; font-size:12px; z-index:9999; opacity:0; transition:opacity 0.3s; }
+#pos-toast.show { opacity:1; }
+#pos-toast.error { background:#dc3545; }
+#pos-toast.success { background:#28a745; }
+@media print {
+    @page { margin:0; size:80mm auto; }
+    body * { visibility:hidden; }
+    #posReceipt, #posReceipt * { visibility:visible; }
+    #posReceipt { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+    .no-print { display:none !important; }
+}
+#posReceipt { display:none; font-family:'Courier New',monospace; font-size:12px; width:300px; margin:0 auto; }
+#posReceipt.show-print { display:block; }
+#posReceipt .receipt-header { text-align:center; border-bottom:1px dashed #333; padding-bottom:8px; margin-bottom:8px; }
+#posReceipt .receipt-header h3 { margin:0; font-size:14px; }
+#posReceipt .receipt-header p { margin:2px 0; font-size:11px; color:#555; }
+#posReceipt table { width:100%; border-collapse:collapse; }
+#posReceipt table th { text-align:left; font-size:11px; padding:4px 0; border-bottom:1px solid #333; }
+#posReceipt table td { padding:3px 0; font-size:12px; }
+#posReceipt table td.r { text-align:right; }
+#posReceipt table td.c { text-align:center; }
+#posReceipt .receipt-totals { border-top:1px dashed #333; margin-top:6px; padding-top:6px; }
+#posReceipt .receipt-totals .row { display:flex; justify-content:space-between; font-size:12px; padding:2px 0; }
+#posReceipt .receipt-totals .row.total { font-size:14px; font-weight:700; border-top:1px solid #333; padding-top:4px; margin-top:4px; }
+#posReceipt .receipt-footer { text-align:center; border-top:1px dashed #333; margin-top:8px; padding-top:8px; font-size:11px; color:#555; }
+@media(max-width:768px) { .pos-layout { flex:none; height:auto; padding:0 10px; } body { overflow:visible; min-height:0; } .pos-wrapper { flex-direction:column; } .pos-cart { width:100%; } }
+</style>
+
+<div class="pos-layout">
+    {% if sub and sub.status == 'trial' and trial_days_remaining is not None %}
+    <div style="background:#e7f7ff;border:1px solid #17a2b8;border-radius:6px;padding:8px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#17a2b8;"><i class="fa fa-clock-o"></i> <strong>Trial:</strong> {{ trial_days_remaining }} days remaining (ends {{ sub.trial_ends_at|date:"d M Y" }})</span>
+        <a href="{% url 'medicine_subscription_page' %}" style="font-size:11px;color:#17a2b8;text-decoration:underline;">Manage Subscription</a>
+    </div>
+    {% elif sub and sub.status == 'expired' %}
+    <div style="background:#fff5f5;border:1px solid #dc3545;border-radius:6px;padding:8px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#dc3545;"><i class="fa fa-exclamation-triangle"></i> <strong>Subscription Expired.</strong> Subscribe to continue using Medicine POS.</span>
+        <a href="{% url 'medicine_subscription_page' %}" class="btn btn-primary" style="background:#6f42c1;border-color:#6f42c1;font-size:11px;padding:4px 12px;">Subscribe Now</a>
+    </div>
+    {% elif sub and sub.status == 'active' and trial_days_remaining is not None and trial_days_remaining <= 7 %}
+    <div style="background:#fffef5;border:1px solid #ffc107;border-radius:6px;padding:8px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#856404;"><i class="fa fa-clock-o"></i> <strong>Renewal Notice:</strong> Your subscription ends in {{ trial_days_remaining }} days ({{ sub.current_period_end|date:"d M Y" }}).</span>
+        <a href="{% url 'medicine_subscription_page' %}" style="font-size:11px;color:#856404;text-decoration:underline;">Renew Now</a>
+    </div>
+    {% endif %}
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <span style="font-size:11px;color:#6f42c1;font-weight:600;"><i class="fa fa-medkit"></i> MEDICINE POS</span>
+    </div>
+    <div class="pos-stats">
+        <div class="stat">
+            <i class="fa fa-shopping-cart" style="font-size:20px;color:#6f42c1;"></i>
+            <div><strong>{{ today_count }}</strong><span> Orders Today</span></div>
+        </div>
+        <div class="stat">
+            <i class="fa fa-money" style="font-size:20px;color:#28a745;"></i>
+            <div><strong>৳{{ today_total|floatformat:0 }}</strong><span> Total Today</span></div>
+        </div>
+        <div style="flex:1;"></div>
+        <a href="{% url 'medicine_pos_order_list' %}" class="btn btn-outline no-print" style="font-size:12px;"><i class="fa fa-list"></i> Order History</a>
+        <a href="{% url 'medicine_pos_daily_report' %}" class="btn btn-outline no-print" style="font-size:12px;"><i class="fa fa-bar-chart"></i> Report</a>
+    </div>
+
+    <div class="pos-wrapper">
+        <div class="pos-products">
+            <input type="text" class="pos-search no-print" id="posSearch" placeholder="Search by brand, generic, strength..." autofocus>
+            <div class="pos-grid" id="posGrid">
+                {% for p in products %}
+                <div class="pos-product" data-id="{{ p.id }}" data-name="{{ p }}" data-price="{{ p.price }}" onclick="addToCart(this)">
+                    <div class="brand">{{ p.brand_name }}</div>
+                    <div class="generic">{{ p.generic_name|default:'—' }}</div>
+                    <div class="strength">{{ p.strength|default:'' }} {{ p.dosage_form|default:'' }}</div>
+                    <div class="price">৳{{ p.price }}</div>
+                </div>
+                 {% empty %}
+                 <div style="grid-column:1/-1;text-align:center;padding:40px;color:#aaa;">
+                     <i class="fa fa-medkit" style="font-size:48px;margin-bottom:10px;"></i>
+                     <p>Type in the search box above to find medicine products.</p>
+                 </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="pos-cart">
+            <div class="cart-header">
+                <h3><i class="fa fa-shopping-bag"></i> Cart</h3>
+                <span id="cartCount" style="background:#6f42c1;color:#fff;border-radius:12px;padding:2px 10px;font-size:12px;">0</span>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <div class="cart-empty" id="cartEmpty">
+                    <i class="fa fa-cart-plus"></i>
+                    <p>Click on products to add them to the cart.</p>
+                </div>
+            </div>
+            <div class="cart-summary-footer">
+                <div class="cart-totals">
+                    <div class="row"><label>Subtotal</label><span class="price-box" id="cartSubtotal">৳0</span></div>
+                    <div class="row">
+                        <label>Discount</label>
+                        <span class="price-box"><input type="number" id="orderDiscount" value="0" min="0" step="any" onchange="updateTotals()" onkeyup="updateTotals()"></span>
+                    </div>
+                    <div class="row total"><label>Total</label><span class="price-box" id="cartTotal">৳0</span></div>
+                </div>
+                <div class="cart-customer">
+                    <input type="text" id="customerName" placeholder="Customer name (optional)">
+                    <input type="text" id="customerPhone" placeholder="Customer phone (optional)">
+                </div>
+                <div class="cart-payment">
+                    <select id="paymentMethod">
+                        <option value="cash">Cash</option>
+                        <option value="bkash">bKash</option>
+                        <option value="nagad">Nagad</option>
+                        <option value="rocket">Rocket</option>
+                        <option value="card">Card</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <button class="cart-checkout no-print" id="checkoutBtn" onclick="checkout()" disabled>Complete Sale</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="successModal">
+    <div class="modal-box">
+        <i class="fa fa-check-circle" style="font-size:48px;color:#28a745;margin-bottom:10px;"></i>
+        <h2>Sale Complete!</h2>
+        <p style="color:#888;">Invoice Number</p>
+        <div class="invoice-num" id="invoiceNum">—</div>
+        <div style="margin-top:15px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <a href="{% url 'medicine_pos_dashboard' %}" class="btn btn-primary no-print">New Sale</a>
+            <a href="{% url 'medicine_pos_order_list' %}" class="btn btn-outline no-print">Orders</a>
+            <button class="btn btn-success no-print" onclick="printReceipt()"><i class="fa fa-print"></i> Print Invoice</button>
+        </div>
+    </div>
+</div>
+
+<div id="posReceipt"><div id="receiptContent"></div></div>
+<div id="pos-toast"></div>
+
+<script>
+let cart = [];
+let lastOrderData = null;
+
+function addToCart(el) {
+    const id = parseInt(el.dataset.id);
+    const name = el.dataset.name;
+    const price = parseFloat(el.dataset.price);
+    const existing = cart.find(c => c.id === id);
+    if (existing) {
+        existing.qty++;
+    } else {
+        cart.push({ id, name, price, qty: 1, discount: 0 });
+    }
+    renderCart();
+}
+
+function renderCart() {
+    const container = document.getElementById('cartItems');
+    const count = document.getElementById('cartCount');
+    if (cart.length === 0) {
+        container.innerHTML = '<div class="cart-empty" id="cartEmpty"><i class="fa fa-cart-plus"></i><p>Click on products to add them to the cart.</p></div>';
+        count.textContent = '0';
+        document.getElementById('checkoutBtn').disabled = true;
+        updateTotals();
+        return;
+    }
+    let html = '';
+    let totalQty = 0;
+    cart.forEach((c, i) => {
+        totalQty += c.qty;
+        html += `<div class="cart-item">
+            <div class="ci-name">${c.name}</div>
+            <div class="ci-qty">
+                <button onclick="changeQty(${i}, -1)">−</button>
+                <span>${c.qty}</span>
+                <button onclick="changeQty(${i}, 1)">+</button>
+            </div>
+            <div class="ci-price">৳${(c.price * c.qty).toFixed(0)}</div>
+            <div class="ci-remove" onclick="removeItem(${i})"><i class="fa fa-times"></i></div>
+        </div>`;
+    });
+    container.innerHTML = html;
+    count.textContent = totalQty;
+    document.getElementById('checkoutBtn').disabled = false;
+    updateTotals();
+}
+
+function changeQty(index, delta) {
+    const c = cart[index];
+    const newQty = c.qty + delta;
+    if (newQty < 1) { removeItem(index); return; }
+    c.qty = newQty;
+    renderCart();
+}
+
+function removeItem(index) {
+    cart.splice(index, 1);
+    renderCart();
+}
+
+function updateTotals() {
+    let subtotal = 0;
+    cart.forEach(c => { subtotal += c.price * c.qty; });
+    const discount = parseFloat(document.getElementById('orderDiscount').value) || 0;
+    const total = Math.max(0, subtotal - discount);
+    document.getElementById('cartSubtotal').textContent = '৳' + subtotal.toFixed(0);
+    document.getElementById('cartTotal').textContent = '৳' + total.toFixed(0);
+}
+
+function checkout() {
+    if (cart.length === 0) return;
+    const btn = document.getElementById('checkoutBtn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+    const items = cart.map(c => ({ product_id: c.id, quantity: c.qty, discount: 0 }));
+    const data = {
+        items: items,
+        discount: parseFloat(document.getElementById('orderDiscount').value) || 0,
+        customer_name: document.getElementById('customerName').value,
+        customer_phone: document.getElementById('customerPhone').value,
+        payment_method: document.getElementById('paymentMethod').value,
+    };
+    fetch('{% url "medicine_pos_order_create" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify(data),
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            lastOrderData = res;
+            document.getElementById('invoiceNum').textContent = res.invoice;
+            document.getElementById('successModal').classList.add('show');
+            cart = [];
+            renderCart();
+            document.getElementById('orderDiscount').value = 0;
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = '';
+        } else {
+            showToast(res.error || 'Checkout failed', 'error');
+        }
+    })
+    .catch(err => { showToast('Network error', 'error'); })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = 'Complete Sale';
+    });
+}
+
+function printReceipt() {
+    const data = lastOrderData;
+    if (!data) return;
+    const pmLabels = {cash:'Cash',bkash:'bKash',nagad:'Nagad',rocket:'Rocket',card:'Card',other:'Other'};
+    const container = document.getElementById('receiptContent');
+    container.innerHTML = '';
+    const hdr = document.createElement('div');
+    hdr.className = 'receipt-header';
+    const h3 = document.createElement('h3'); h3.textContent = '{{ site_name }}'; hdr.appendChild(h3);
+    const invP = document.createElement('p'); invP.innerHTML = 'Invoice: <strong>' + escapeHTML(data.invoice) + '</strong>'; hdr.appendChild(invP);
+    const selP = document.createElement('p'); selP.textContent = 'Sold by: {{ partner.name }}'; hdr.appendChild(selP);
+    const dtP = document.createElement('p'); dtP.textContent = data.created; hdr.appendChild(dtP);
+    container.appendChild(hdr);
+    if (data.customer_name) {
+        const cP = document.createElement('p'); cP.style.cssText = 'margin:4px 0;font-size:11px;';
+        cP.textContent = 'Customer: ' + data.customer_name + (data.customer_phone ? ' (' + data.customer_phone + ')' : '');
+        container.appendChild(cP);
+    }
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const trH = document.createElement('tr');
+    ['Item','Qty','Total'].forEach(t => { const th = document.createElement('th'); th.textContent = t; if (t==='Qty') th.style.textAlign='center'; if (t==='Total') th.style.textAlign='right'; trH.appendChild(th); });
+    thead.appendChild(trH); table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    data.items.forEach(item => {
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td'); td1.textContent = escapeHTML(item.name); tr.appendChild(td1);
+        const td2 = document.createElement('td'); td2.style.textAlign='center'; td2.textContent = item.qty; tr.appendChild(td2);
+        const td3 = document.createElement('td'); td3.style.textAlign='right'; td3.textContent = '\u09F3' + item.total; tr.appendChild(td3);
+        tbody.appendChild(tr);
+    });
+    table.appendChild(tbody); container.appendChild(table);
+    const totals = document.createElement('div'); totals.className = 'receipt-totals';
+    const subR = document.createElement('div'); subR.className = 'row'; subR.appendChild(el('span','Subtotal')); subR.appendChild(el('span','\u09F3'+data.subtotal)); totals.appendChild(subR);
+    if (data.discount && parseFloat(data.discount) > 0) {
+        const dR = document.createElement('div'); dR.className = 'row'; dR.appendChild(el('span','Discount')); dR.appendChild(el('span','-\u09F3'+data.discount)); totals.appendChild(dR);
+    }
+    const tR = document.createElement('div'); tR.className = 'row total'; tR.appendChild(el('span','Total')); tR.appendChild(el('span','\u09F3'+data.total)); totals.appendChild(tR);
+    container.appendChild(totals);
+    const payP = document.createElement('p'); payP.style.cssText = 'margin:6px 0 0;font-size:11px;';
+    payP.textContent = 'Payment: ' + (pmLabels[data.payment_method] || data.payment_method); container.appendChild(payP);
+    const footer = document.createElement('div'); footer.className = 'receipt-footer';
+    footer.appendChild(el('p','Thank you for your purchase!')); container.appendChild(footer);
+    document.getElementById('posReceipt').classList.add('show-print');
+    window.print();
+    setTimeout(() => document.getElementById('posReceipt').classList.remove('show-print'), 500);
+}
+
+function escapeHTML(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+function el(tag, text) { const e = document.createElement(tag); e.textContent = text; return e; }
+
+function searchProducts() {
+    const q = document.getElementById('posSearch').value.trim();
+    const grid = document.getElementById('posGrid');
+    if (!q) {
+        grid.innerHTML = '';
+        const empty = document.createElement('div'); empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:40px;color:#aaa;'; empty.textContent = 'Type in the search box above to find medicine products.'; grid.appendChild(empty);
+        return;
+    }
+    fetch(`{% url "medicine_pos_product_search" %}?q=${encodeURIComponent(q)}`, {
+      credentials: 'same-origin'
+    })
+    .then(r => {
+        if (!r.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return r.json();
+    })
+    .then(res => {
+        grid.innerHTML = '';
+        if (!res.products || res.products.length === 0) {
+            const empty = document.createElement('div'); empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:40px;color:#aaa;'; empty.textContent = 'No products found.'; grid.appendChild(empty);
+            return;
+        }
+        res.products.forEach(p => {
+            const div = document.createElement('div'); div.className = 'pos-product'; div.dataset.id = p.id; div.dataset.name = p.name; div.dataset.price = p.price; div.onclick = function() { addToCart(this); };
+            const brand = document.createElement('div'); brand.className = 'brand'; brand.textContent = p.brand_name; div.appendChild(brand);
+            const generic = document.createElement('div'); generic.className = 'generic'; generic.textContent = p.generic_name || '—'; div.appendChild(generic);
+            const strength = document.createElement('div'); strength.className = 'strength'; strength.textContent = (p.strength||'') + ' ' + (p.dosage_form||''); div.appendChild(strength);
+            const price = document.createElement('div'); price.className = 'price'; price.textContent = '৳' + p.price; div.appendChild(price);
+            grid.appendChild(div);
+        });
+    })
+    .catch(error => {
+        console.error('Error fetching products:', error);
+        grid.innerHTML = '';
+        const empty = document.createElement('div'); empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:40px;color:#aaa;'; empty.textContent = 'Error loading products. Please try again.'; grid.appendChild(empty);
+    });
+}
+
+let searchTimeout;
+document.getElementById('posSearch').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(searchProducts, 300);
+});
+
+function showToast(msg, type) {
+    const t = document.getElementById('pos-toast'); t.textContent = msg; t.className = type || ''; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+{% endblock %}

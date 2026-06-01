@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analytics - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Analytics</span>
+    </div>
+
+    <div class="page-header"><h1>Sales Analytics</h1></div>
+
+    <div style="margin-bottom:20px;">
+        <label style="font-size:13px;color:#666;">Period:</label>
+        <select id="periodSelect" onchange="loadData()" style="padding:6px 12px;border:1px solid #ddd;border-radius:4px;">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+        </select>
+    </div>
+
+    <div class="row" id="summaryCards" style="margin-bottom:25px;"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div style="border:1px solid #eee;padding:20px;border-radius:8px;height:300px;position:relative;">
+            <h4 style="margin-bottom:15px;">Sales Over Time</h4>
+            <canvas id="salesChart" height="250"></canvas>
+        </div>
+        <div style="border:1px solid #eee;padding:20px;border-radius:8px;height:300px;position:relative;">
+            <h4 style="margin-bottom:15px;">Top Products</h4>
+            <canvas id="topProductsChart" height="250"></canvas>
+        </div>
+        <div style="border:1px solid #eee;padding:20px;border-radius:8px;height:300px;position:relative;">
+            <h4 style="margin-bottom:15px;">Orders by Status</h4>
+            <canvas id="statusChart" height="200"></canvas>
+        </div>
+        <div style="border:1px solid #eee;padding:20px;border-radius:8px;height:300px;position:relative;">
+            <h4 style="margin-bottom:15px;">Revenue vs Profit</h4>
+            <canvas id="profitChart" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" integrity="sha384-6R42N0j0Zdb7TcoK8Nuz7uO4TX9GFDJ7k6Gr/2/4dNFov1SGoPwPwv+Pm28tBPE" crossorigin="anonymous"></script>
+<script>
+var chartInstances = {};
+function destroyCharts() {
+    Object.values(chartInstances).forEach(function(c) { if (c) c.destroy(); });
+    chartInstances = {};
+}
+function loadData() {
+    var days = document.getElementById('periodSelect').value;
+    destroyCharts();
+    fetch('{% url "dashboard_analytics_data" %}?days=' + days)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var cards = document.getElementById('summaryCards');
+            cards.innerHTML = '';
+            if (data.error) {
+                var errP = document.createElement('p');
+                errP.style.color = 'red';
+                errP.textContent = 'Error: ' + data.error;
+                cards.appendChild(errP);
+                return;
+            }
+            function makeCard(label, value, color, isSmall) {
+                var col = document.createElement('div');
+                col.className = 'col-3';
+                var inner = document.createElement('div');
+                inner.style.cssText = 'border:1px solid #eee;padding:20px;text-align:center;border-radius:8px;';
+                var lbl = document.createElement('p');
+                lbl.style.cssText = 'color:#888;font-size:11px;margin:0 0 5px;';
+                lbl.textContent = label;
+                inner.appendChild(lbl);
+                var val = document.createElement('h2');
+                val.style.cssText = (isSmall ? 'font-size:20px;' : 'font-size:28px;') + 'color:' + color + ';margin:0;';
+                val.textContent = value;
+                inner.appendChild(val);
+                col.appendChild(inner);
+                cards.appendChild(col);
+            }
+            makeCard('Total Revenue', '\u09F3' + data.total_revenue.toFixed(0), '#28a745');
+            makeCard('Total Cost', '\u09F3' + data.total_cost.toFixed(0), '#dc3545');
+            makeCard('Net Profit', '\u09F3' + (data.total_revenue - data.total_cost).toFixed(0), '#e74847');
+            var topName = (data.top_products.length ? data.top_products[0].name : 'N/A');
+            makeCard('Top Product', topName, '#333', true);
+            chartInstances.sales = new Chart(document.getElementById('salesChart'), {type:'line',data:{labels:data.sales_labels,datasets:[{label:'Revenue',data:data.sales_revenue,borderColor:'#28a745',fill:false},{label:'Profit',data:data.sales_profit,borderColor:'#e74847',fill:false}]},options:{responsive:true,maintainAspectRatio:false}});
+            chartInstances.top = new Chart(document.getElementById('topProductsChart'), {type:'bar',data:{labels:data.top_products.map(function(p){return p.name.substring(0,15);}),datasets:[{label:'Revenue',data:data.top_products.map(function(p){return p.revenue;}),backgroundColor:'#17a2b8'}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y'}});
+            var labels=Object.keys(data.status_counts),vals=Object.values(data.status_counts);
+            chartInstances.status = new Chart(document.getElementById('statusChart'), {type:'doughnut',data:{labels:labels,datasets:[{data:vals,backgroundColor:['#ffc107','#17a2b8','#28a745','#dc3545']}]}});
+            chartInstances.profit = new Chart(document.getElementById('profitChart'), {type:'bar',data:{labels:['Revenue','Cost','Profit'],datasets:[{data:[data.total_revenue,data.total_cost,data.total_revenue-data.total_cost],backgroundColor:['#28a745','#dc3545','#e74847']}]},options:{responsive:true,maintainAspectRatio:false}});
+        })
+        .catch(function(err) {
+            document.getElementById('summaryCards').innerHTML = '<p style="color:red;">Failed to load analytics data.</p>';
+        });
+}
+loadData();
+</script>
+{% endblock %}

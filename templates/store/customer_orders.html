@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Orders - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>My Orders</span>
+    </div>
+    <div class="page-header"><h1>My Orders</h1></div>
+
+    {% if orders %}
+    <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+                <tr style="background:#f8f8f8; text-align:left;">
+                    <th style="padding:10px 8px; border-bottom:2px solid #eee;">Order #</th>
+                    <th style="padding:10px 8px; border-bottom:2px solid #eee;">Date</th>
+                    <th style="padding:10px 8px; border-bottom:2px solid #eee;">Items</th>
+                    <th style="padding:10px 8px; border-bottom:2px solid #eee;">Total</th>
+                    <th style="padding:10px 8px; border-bottom:2px solid #eee;">Payment</th>
+                    <th style="padding:10px 8px; border-bottom:2px solid #eee;">Status</th>
+                    <th style="padding:10px 8px; border-bottom:2px solid #eee;">Delivery</th>
+                    <th style="padding:10px 8px; border-bottom:2px solid #eee;">Tracking</th>
+                    <th style="padding:10px 8px; border-bottom:2px solid #eee;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:10px 8px;">#{{ order.id }}</td>
+                    <td style="padding:10px 8px;">{{ order.created|date:"d M Y" }}</td>
+                    <td style="padding:10px 8px;">
+                        {% for item in order.items.all %}
+                        <div style="margin:2px 0;">
+                            {% if item.product %}
+                            <a href="{% url 'product_detail' item.product.slug %}" style="color:#333; text-decoration:none;">{{ item.product_name }}</a>
+                            {% else %}
+                            {{ item.product_name }}
+                            {% endif %}
+                            × {{ item.quantity }}
+                        </div>
+                        {% endfor %}
+                    </td>
+                    <td style="padding:10px 8px; font-weight:600;">৳{{ order.total }}</td>
+                    <td style="padding:10px 8px;">{{ order.payment_method }}</td>
+                    <td style="padding:10px 8px;">
+                        <span style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; color:#fff;
+                        {% if order.status == 'pending' %}background:#ffc107;
+                        {% elif order.status == 'processing' %}background:#2196F3;
+                        {% elif order.status == 'completed' %}background:#28a745;
+                        {% elif order.status == 'cancelled' %}background:#dc3545;
+                        {% elif order.status == 'refunded' %}background:#6c757d;
+                        {% else %}background:#6c757d;{% endif %}">
+                            {{ order.get_status_display }}
+                        </span>
+                    </td>
+                    <td style="padding:10px 8px;">
+                        {% if order.delivery_status %}
+                        <span style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; color:#fff;
+                        {% if order.delivery_status == 'pending' %}background:#ffc107;
+                        {% elif order.delivery_status == 'picked_up' %}background:#17a2b8;
+                        {% elif order.delivery_status == 'in_transit' %}background:#2196F3;
+                        {% elif order.delivery_status == 'out_for_delivery' %}background:#FF9800;
+                        {% elif order.delivery_status == 'delivered' %}background:#28a745;
+                        {% elif order.delivery_status == 'failed' %}background:#dc3545;
+                        {% else %}background:#6c757d;{% endif %}">
+                            {{ order.get_delivery_status_display }}
+                        </span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td style="padding:10px 8px; font-size:12px;">
+                        {% if order.courier_name %}{{ order.get_courier_name_display }}{% endif %}
+                        {% if order.tracking_id %}<br><strong>{{ order.tracking_id }}</strong>{% endif %}
+                        {% if not order.courier_name and not order.tracking_id %}—{% endif %}
+                    </td>
+                    <td style="padding:10px 8px;">
+                        <a href="{% url 'customer_order_detail' order.id %}" style="display:inline-block; background:#2196F3; color:#fff; padding:4px 10px; border-radius:4px; font-size:11px; text-decoration:none;">View</a>
+                        {% if order.status == 'pending' %}
+                        <form method="POST" action="{% url 'cancel_order' order.id %}" style="display:inline; margin-left:5px;">
+                            {% csrf_token %}
+                            <button type="submit" style="background:#dc3545; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="return confirm('Are you sure you want to cancel this order?');">Cancel</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+    <div style="text-align:center; margin-top:30px;">
+        {% if page_obj.has_previous %}
+        <a href="?page=1" style="display:inline-block; padding:6px 12px; margin:0 3px; background:#f8f8f8; border:1px solid #ddd; border-radius:4px; text-decoration:none; color:#333;">&laquo;</a>
+        <a href="?page={{ page_obj.previous_page_number }}" style="display:inline-block; padding:6px 12px; margin:0 3px; background:#f8f8f8; border:1px solid #ddd; border-radius:4px; text-decoration:none; color:#333;">&lsaquo;</a>
+        {% endif %}
+        <span style="display:inline-block; padding:6px 15px; font-weight:600;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" style="display:inline-block; padding:6px 12px; margin:0 3px; background:#f8f8f8; border:1px solid #ddd; border-radius:4px; text-decoration:none; color:#333;">&rsaquo;</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}" style="display:inline-block; padding:6px 12px; margin:0 3px; background:#f8f8f8; border:1px solid #ddd; border-radius:4px; text-decoration:none; color:#333;">&raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div style="text-align:center; padding:60px 0;">
+        <i class="fa fa-shopping-bag" style="font-size:48px; color:#ddd; margin-bottom:20px;"></i>
+        <h3>No orders yet</h3>
+        <p style="color:#666; margin-bottom:20px;">You haven't placed any orders yet.</p>
+        <a href="{% url 'shop_grid' %}" style="display:inline-block; background:#e74847; color:#fff; padding:10px 25px; border-radius:4px; text-decoration:none; font-weight:600;">Browse Products</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

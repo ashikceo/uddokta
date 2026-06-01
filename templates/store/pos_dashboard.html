@@ -1,0 +1,524 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}POS - {{ partner.name }} - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<style>
+/* Full viewport POS layout — footer visible below */
+body { min-height:100vh; display:flex; flex-direction:column; }
+
+.pos-layout { flex:1; min-height:0; display:flex; flex-direction:column; padding:0 15px; width:100%; }
+.pos-stats { display:flex; gap:10px; margin-bottom:8px; flex-shrink:0; }
+.pos-stats .stat { background:#f8f9fa; border-radius:6px; padding:6px 12px; display:flex; align-items:center; gap:6px; }
+.pos-stats .stat strong { font-size:14px; color:#e74847; }
+.pos-stats .stat span { font-size:11px; color:#888; }
+
+.pos-wrapper { display:flex; gap:15px; flex:1; min-height:0; overflow:hidden; }
+.pos-products { flex:1; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
+.pos-search { width:100%; padding:6px 10px; border:2px solid #e74847; border-radius:4px; font-size:13px; outline:none; margin-bottom:8px; flex-shrink:0; }
+.pos-search:focus { border-color:#c0392b; }
+.pos-grid { flex:1; overflow-y:auto; min-height:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:6px; padding-right:5px; }
+.pos-product { border:1px solid #eee; border-radius:6px; padding:6px; text-align:center; cursor:pointer; transition:all 0.15s; background:#fff; overflow:hidden; }
+.pos-product:hover { border-color:#e74847; box-shadow:0 2px 8px rgba(231,72,71,0.15); transform:translateY(-1px); }
+.pos-product img { width:100%; height:70px; max-height:70px; object-fit:contain; border-radius:4px; margin-bottom:4px; background:#f9f9f9; }
+.pos-product .name { font-size:11px; font-weight:600; color:#333; line-height:1.2; margin-bottom:2px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.pos-product .price { font-size:12px; color:#e74847; font-weight:700; }
+.pos-product .stock { font-size:9px; color:#888; }
+.pos-product .out-of-stock { opacity:0.5; cursor:not-allowed; }
+
+.pos-cart { width:380px; flex-shrink:0; display:flex; flex-direction:column; min-height:0; }
+.cart-summary-footer { flex-shrink:0; background:#fff; border-top:1px solid #e0e0e0; padding:10px 12px; }
+.cart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-shrink:0; }
+.cart-header h3 { margin:0; font-size:14px; }
+.cart-items { flex:1; overflow-y:auto; min-height:0; }
+.cart-item { display:flex; align-items:center; gap:6px; padding:4px 0; border-bottom:1px solid #eee; }
+.cart-item .ci-name { flex:1; font-size:12px; font-weight:500; }
+.cart-item .ci-price { font-size:12px; color:#e74847; font-weight:600; min-width:50px; text-align:right; }
+.cart-item .ci-qty { display:flex; align-items:center; gap:2px; }
+.cart-item .ci-qty button { width:22px; height:22px; border:1px solid #ddd; border-radius:3px; background:#fff; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; }
+.cart-item .ci-qty button:hover { background:#f5f5f5; }
+.cart-item .ci-qty span { min-width:16px; text-align:center; font-weight:600; font-size:12px; }
+.cart-item .ci-remove { color:#ccc; cursor:pointer; font-size:14px; padding:2px 4px; }
+.cart-item .ci-remove:hover { color:#e74847; }
+.cart-empty { text-align:center; padding:20px 0; color:#aaa; }
+.cart-empty i { font-size:36px; margin-bottom:6px; }
+.cart-totals { padding-top:6px; flex-shrink:0; }
+.cart-totals .row { display:flex; justify-content:space-between; padding:2px 0; font-size:12px; overflow:hidden; }
+.cart-totals .row.total { font-size:15px; font-weight:700; color:#e74847; border-top:1px solid #eee; padding-top:4px; margin-top:2px; }
+.cart-totals .row label { color:#666; }
+.price-box { text-align:right; white-space:nowrap; overflow:hidden; }
+.price-box input[type=number] { width:70px; padding:2px 4px; border:1px solid #ddd; border-radius:3px; text-align:right; font-size:12px; }
+.cart-customer { margin-top:6px; flex-shrink:0; }
+.cart-customer input { width:100%; padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:12px; margin-bottom:4px; }
+.cart-payment { margin-top:6px; }
+.cart-payment select { width:100%; padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:12px; }
+.cart-checkout { width:100%; padding:8px; background:#e74847; color:#fff; border:none; border-radius:4px; font-size:14px; font-weight:600; cursor:pointer; margin-top:8px; }
+.cart-checkout:hover { background:#c0392b; }
+.cart-checkout:disabled { background:#ccc; cursor:not-allowed; }
+
+#pos-toast { position:fixed; bottom:20px; right:20px; background:#333; color:#fff; padding:8px 16px; border-radius:4px; font-size:12px; z-index:9999; opacity:0; transition:opacity 0.3s; }
+#pos-toast.show { opacity:1; }
+#pos-toast.error { background:#e74847; }
+#pos-toast.success { background:#28a745; }
+
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+.modal-overlay.show { display:flex; }
+.modal-box { background:#fff; border-radius:12px; padding:30px; max-width:420px; width:90%; text-align:center; }
+.modal-box h2 { margin:0 0 10px; }
+.modal-box .invoice-num { font-size:24px; color:#e74847; font-weight:700; margin:10px 0; }
+.modal-box .btn { margin-top:15px; }
+
+/* Print receipt styles */
+@media print {
+    @page { margin:0; size:80mm auto; }
+    body * { visibility:hidden; }
+    #posReceipt, #posReceipt * { visibility:visible; }
+    #posReceipt { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+    .no-print { display:none !important; }
+}
+#posReceipt { display:none; font-family:'Courier New',monospace; font-size:12px; width:300px; margin:0 auto; }
+#posReceipt.show-print { display:block; }
+#posReceipt .receipt-header { text-align:center; border-bottom:1px dashed #333; padding-bottom:8px; margin-bottom:8px; }
+#posReceipt .receipt-header h3 { margin:0; font-size:14px; }
+#posReceipt .receipt-header p { margin:2px 0; font-size:11px; color:#555; }
+#posReceipt table { width:100%; border-collapse:collapse; }
+#posReceipt table th { text-align:left; font-size:11px; padding:4px 0; border-bottom:1px solid #333; }
+#posReceipt table td { padding:3px 0; font-size:12px; }
+#posReceipt table td.r { text-align:right; }
+#posReceipt table td.c { text-align:center; }
+#posReceipt .receipt-totals { border-top:1px dashed #333; margin-top:6px; padding-top:6px; }
+#posReceipt .receipt-totals .row { display:flex; justify-content:space-between; font-size:12px; padding:2px 0; }
+#posReceipt .receipt-totals .row.total { font-size:14px; font-weight:700; border-top:1px solid #333; padding-top:4px; margin-top:4px; }
+#posReceipt .receipt-footer { text-align:center; border-top:1px dashed #333; margin-top:8px; padding-top:8px; font-size:11px; color:#555; }
+
+@media(max-width:768px) { .pos-layout { flex:none; height:auto; padding:0 10px; } body { overflow:visible; min-height:0; } .pos-wrapper { flex-direction:column; } .pos-cart { width:100%; } }
+</style>
+
+{% if not partner.is_seller and not partner.is_dealer and not partner.is_union_agent %}
+<div style="text-align:center;padding:60px 0;">
+    <i class="fa fa-exclamation-triangle" style="font-size:48px;color:#ffc107;margin-bottom:15px;"></i>
+    <h2>POS Not Available</h2>
+    <p style="color:#888;">You need a seller or dealer account to use the POS system.</p>
+    <a href="{% url 'dashboard' %}" class="btn btn-outline" style="margin-top:15px;">Back to Dashboard</a>
+</div>
+{% else %}
+
+<div class="pos-layout">
+    <div class="pos-stats">
+        <div class="stat">
+            <i class="fa fa-shopping-cart" style="font-size:20px;color:#e74847;"></i>
+            <div><strong>{{ today_count }}</strong><span> Orders Today</span></div>
+        </div>
+        <div class="stat">
+            <i class="fa fa-money" style="font-size:20px;color:#28a745;"></i>
+            <div><strong>৳{{ today_total|floatformat:0 }}</strong><span> Total Today</span></div>
+        </div>
+        <div style="flex:1;"></div>
+        <a href="{% url 'pos_order_list' %}" class="btn btn-outline no-print" style="font-size:12px;"><i class="fa fa-list"></i> Order History</a>
+        <a href="{% url 'pos_daily_report' %}" class="btn btn-outline no-print" style="font-size:12px;"><i class="fa fa-bar-chart"></i> Report</a>
+    </div>
+
+    <div class="pos-wrapper">
+        <div class="pos-products">
+            <input type="text" class="pos-search no-print" id="posSearch" placeholder="Search by name, SKU, or scan barcode..." autofocus>
+            <div class="pos-grid" id="posGrid">
+                {% for p in products %}
+                <div class="pos-product" data-id="{{ p.id }}" data-name="{{ p.name }}" data-price="{{ p.price }}" data-stock="{{ p.stock }}" onclick="addToCart(this)">
+                    {% if p.image %}<img src="{{ p.image.url }}" alt="{{ p.name }}">{% else %}<div style="height:100px;background:#f5f5f5;border-radius:4px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;color:#ccc;"><i class="fa fa-image" style="font-size:32px;"></i></div>{% endif %}
+                    <div class="name">{{ p.name }}</div>
+                    <div class="price">৳{{ p.price }}</div>
+                    <div class="stock">Stock: {{ p.stock }}</div>
+                </div>
+                {% empty %}
+                <div style="grid-column:1/-1;text-align:center;padding:40px;color:#aaa;">
+                    <i class="fa fa-box-open" style="font-size:48px;margin-bottom:10px;"></i>
+                    <p>No products available. <a href="{% url 'dashboard_product_create' %}">Add products</a> first.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="pos-cart">
+            <div class="cart-header">
+                <h3><i class="fa fa-shopping-bag"></i> Cart</h3>
+                <span id="cartCount" style="background:#e74847;color:#fff;border-radius:12px;padding:2px 10px;font-size:12px;">0</span>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <div class="cart-empty" id="cartEmpty">
+                    <i class="fa fa-cart-plus"></i>
+                    <p>Click on products to add them to the cart.</p>
+                </div>
+            </div>
+            <div class="cart-summary-footer">
+                <div class="cart-totals">
+                    <div class="row"><label>Subtotal</label><span class="price-box" id="cartSubtotal">৳0</span></div>
+                    <div class="row">
+                        <label>Discount</label>
+                        <span class="price-box"><input type="number" id="orderDiscount" value="0" min="0" step="any" onchange="updateTotals()" onkeyup="updateTotals()"></span>
+                    </div>
+                    <div class="row total"><label>Total</label><span class="price-box" id="cartTotal">৳0</span></div>
+                </div>
+                <div class="cart-customer">
+                    <input type="text" id="customerName" placeholder="Customer name (optional)">
+                    <input type="text" id="customerPhone" placeholder="Customer phone (optional)">
+                </div>
+                <div class="cart-payment">
+                    <select id="paymentMethod">
+                        <option value="cash">Cash</option>
+                        <option value="bkash">bKash</option>
+                        <option value="nagad">Nagad</option>
+                        <option value="rocket">Rocket</option>
+                        <option value="card">Card</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <button class="cart-checkout no-print" id="checkoutBtn" onclick="checkout()" disabled>Complete Sale</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal-overlay" id="successModal">
+    <div class="modal-box">
+        <i class="fa fa-check-circle" style="font-size:48px;color:#28a745;margin-bottom:10px;"></i>
+        <h2>Sale Complete!</h2>
+        <p style="color:#888;">Invoice Number</p>
+        <div class="invoice-num" id="invoiceNum">—</div>
+        <div style="margin-top:15px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <a href="{% url 'pos_dashboard' %}" class="btn btn-primary no-print">New Sale</a>
+            <a href="{% url 'pos_order_list' %}" class="btn btn-outline no-print">Orders</a>
+            <button class="btn btn-success no-print" onclick="printReceipt()"><i class="fa fa-print"></i> Print Invoice</button>
+        </div>
+    </div>
+</div>
+
+<!-- Print receipt (hidden, shown only during print) -->
+<div id="posReceipt">
+    <div id="receiptContent"></div>
+</div>
+
+<div id="pos-toast"></div>
+
+<script>
+let cart = [];
+let lastOrderData = null;
+
+function addToCart(el) {
+    const id = parseInt(el.dataset.id);
+    const name = el.dataset.name;
+    const price = parseFloat(el.dataset.price);
+    const stock = parseInt(el.dataset.stock);
+    const existing = cart.find(c => c.id === id);
+    if (existing) {
+        if (existing.qty >= stock) { showToast('Not enough stock!', 'error'); return; }
+        existing.qty++;
+    } else {
+        if (stock < 1) { showToast('Out of stock!', 'error'); return; }
+        cart.push({ id, name, price, stock, qty: 1, discount: 0 });
+    }
+    renderCart();
+}
+
+function renderCart() {
+    const container = document.getElementById('cartItems');
+    const count = document.getElementById('cartCount');
+    if (cart.length === 0) {
+        container.innerHTML = '<div class="cart-empty" id="cartEmpty"><i class="fa fa-cart-plus"></i><p>Click on products to add them to the cart.</p></div>';
+        count.textContent = '0';
+        document.getElementById('checkoutBtn').disabled = true;
+        updateTotals();
+        return;
+    }
+    let html = '';
+    let totalQty = 0;
+    cart.forEach((c, i) => {
+        totalQty += c.qty;
+        html += `<div class="cart-item">
+            <div class="ci-name">${c.name}</div>
+            <div class="ci-qty">
+                <button onclick="changeQty(${i}, -1)">−</button>
+                <span>${c.qty}</span>
+                <button onclick="changeQty(${i}, 1)">+</button>
+            </div>
+            <div class="ci-price">৳${(c.price * c.qty).toFixed(0)}</div>
+            <div class="ci-remove" onclick="removeItem(${i})"><i class="fa fa-times"></i></div>
+        </div>`;
+    });
+    container.innerHTML = html;
+    count.textContent = totalQty;
+    document.getElementById('checkoutBtn').disabled = false;
+    updateTotals();
+}
+
+function changeQty(index, delta) {
+    const c = cart[index];
+    const newQty = c.qty + delta;
+    if (newQty < 1) { removeItem(index); return; }
+    if (newQty > c.stock) { showToast('Not enough stock!', 'error'); return; }
+    c.qty = newQty;
+    renderCart();
+}
+
+function removeItem(index) {
+    cart.splice(index, 1);
+    renderCart();
+}
+
+function updateTotals() {
+    let subtotal = 0;
+    cart.forEach(c => { subtotal += c.price * c.qty; });
+    const discount = parseFloat(document.getElementById('orderDiscount').value) || 0;
+    const total = Math.max(0, subtotal - discount);
+    document.getElementById('cartSubtotal').textContent = '৳' + subtotal.toFixed(0);
+    document.getElementById('cartTotal').textContent = '৳' + total.toFixed(0);
+}
+
+function checkout() {
+    if (cart.length === 0) return;
+    const btn = document.getElementById('checkoutBtn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+    const items = cart.map(c => ({
+        product_id: c.id,
+        quantity: c.qty,
+        discount: 0,
+    }));
+    const data = {
+        items: items,
+        discount: parseFloat(document.getElementById('orderDiscount').value) || 0,
+        tax: 0,
+        customer_name: document.getElementById('customerName').value,
+        customer_phone: document.getElementById('customerPhone').value,
+        payment_method: document.getElementById('paymentMethod').value,
+    };
+    fetch('{% url "pos_order_create" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify(data),
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            lastOrderData = res;
+            document.getElementById('invoiceNum').textContent = res.invoice;
+            document.getElementById('successModal').classList.add('show');
+            cart = [];
+            renderCart();
+            document.getElementById('orderDiscount').value = 0;
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = '';
+        } else {
+            showToast(res.error || 'Checkout failed', 'error');
+        }
+    })
+    .catch(err => { showToast('Network error', 'error'); })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = 'Complete Sale';
+    });
+}
+
+function printReceipt() {
+    const data = lastOrderData;
+    if (!data) return;
+    const pmLabels = {cash:'Cash',bkash:'bKash',nagad:'Nagad',rocket:'Rocket',card:'Card',other:'Other'};
+    const container = document.getElementById('receiptContent');
+    container.innerHTML = '';
+
+    const header = document.createElement('div');
+    header.className = 'receipt-header';
+    const h3 = document.createElement('h3');
+    h3.textContent = '{{ site_name }}';
+    header.appendChild(h3);
+    const tagline = document.createElement('p');
+    tagline.textContent = '{{ site_tagline }}';
+    header.appendChild(tagline);
+    const invP = document.createElement('p');
+    invP.innerHTML = 'Invoice: <strong>' + escapeHTML(data.invoice) + '</strong>';
+    header.appendChild(invP);
+    const sellerP = document.createElement('p');
+    sellerP.textContent = 'Sold by: {{ partner.name }}';
+    header.appendChild(sellerP);
+    const dateP = document.createElement('p');
+    dateP.textContent = data.created;
+    header.appendChild(dateP);
+    container.appendChild(header);
+
+    if (data.customer_name) {
+        const custP = document.createElement('p');
+        custP.style.cssText = 'margin:4px 0;font-size:11px;';
+        custP.textContent = 'Customer: ' + data.customer_name + (data.customer_phone ? ' (' + data.customer_phone + ')' : '');
+        container.appendChild(custP);
+    }
+
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const trHead = document.createElement('tr');
+    ['Item', 'Qty', 'Total'].forEach(function(t) {
+        const th = document.createElement('th');
+        th.textContent = t;
+        if (t === 'Qty') th.style.textAlign = 'center';
+        if (t === 'Total') th.style.textAlign = 'right';
+        trHead.appendChild(th);
+    });
+    thead.appendChild(trHead);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    data.items.forEach(function(item) {
+        const tr = document.createElement('tr');
+        const tdName = document.createElement('td');
+        tdName.textContent = escapeHTML(item.name);
+        tr.appendChild(tdName);
+        const tdQty = document.createElement('td');
+        tdQty.style.textAlign = 'center';
+        tdQty.textContent = item.qty;
+        tr.appendChild(tdQty);
+        const tdTotal = document.createElement('td');
+        tdTotal.style.textAlign = 'right';
+        tdTotal.textContent = '\u09F3' + item.total;
+        tr.appendChild(tdTotal);
+        tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    container.appendChild(table);
+
+    const totals = document.createElement('div');
+    totals.className = 'receipt-totals';
+    const subRow = document.createElement('div');
+    subRow.className = 'row';
+    subRow.appendChild(el('span', 'Subtotal'));
+    subRow.appendChild(el('span', '\u09F3' + data.subtotal));
+    totals.appendChild(subRow);
+    if (data.discount && parseFloat(data.discount) > 0) {
+        const discRow = document.createElement('div');
+        discRow.className = 'row';
+        discRow.appendChild(el('span', 'Discount'));
+        discRow.appendChild(el('span', '-\u09F3' + data.discount));
+        totals.appendChild(discRow);
+    }
+    const totalRow = document.createElement('div');
+    totalRow.className = 'row total';
+    totalRow.appendChild(el('span', 'Total'));
+    totalRow.appendChild(el('span', '\u09F3' + data.total));
+    totals.appendChild(totalRow);
+    container.appendChild(totals);
+
+    const payP = document.createElement('p');
+    payP.style.cssText = 'margin:6px 0 0;font-size:11px;';
+    payP.textContent = 'Payment: ' + (pmLabels[data.payment_method] || data.payment_method);
+    container.appendChild(payP);
+
+    const footer = document.createElement('div');
+    footer.className = 'receipt-footer';
+    const thanks = document.createElement('p');
+    thanks.textContent = 'Thank you for your purchase!';
+    footer.appendChild(thanks);
+    container.appendChild(footer);
+
+    document.getElementById('posReceipt').classList.add('show-print');
+    window.print();
+    setTimeout(() => {
+        document.getElementById('posReceipt').classList.remove('show-print');
+    }, 500);
+}
+
+function escapeHTML(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+function el(tag, text) {
+    const e = document.createElement(tag);
+    e.textContent = text;
+    return e;
+}
+
+function searchProducts() {
+    const q = document.getElementById('posSearch').value.trim();
+    if (!q) {
+        location.reload();
+        return;
+    }
+    fetch(`{% url "pos_product_search" %}?q=${encodeURIComponent(q)}`)
+    .then(r => r.json())
+    .then(res => {
+        const grid = document.getElementById('posGrid');
+        grid.innerHTML = '';
+        if (!res.products || res.products.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:40px;color:#aaa;';
+            empty.textContent = 'No products found.';
+            grid.appendChild(empty);
+            return;
+        }
+        res.products.forEach(p => {
+            const div = document.createElement('div');
+            div.className = 'pos-product';
+            div.dataset.id = p.id;
+            div.dataset.name = p.name;
+            div.dataset.price = p.price;
+            div.dataset.stock = p.stock;
+            div.onclick = function() { addToCart(this); };
+
+            if (p.image) {
+                const img = document.createElement('img');
+                img.src = p.image;
+                img.alt = p.name;
+                div.appendChild(img);
+            } else {
+                const ph = document.createElement('div');
+                ph.style.cssText = 'height:100px;background:#f5f5f5;border-radius:4px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;color:#ccc;';
+                const icon = document.createElement('i');
+                icon.className = 'fa fa-image';
+                icon.style.fontSize = '32px';
+                ph.appendChild(icon);
+                div.appendChild(ph);
+            }
+
+            const name = document.createElement('div');
+            name.className = 'name';
+            name.textContent = p.name;
+            div.appendChild(name);
+
+            if (p.barcode) {
+                const bc = document.createElement('div');
+                bc.style.cssText = 'font-size:10px;color:#999;margin-bottom:4px;';
+                bc.textContent = p.barcode;
+                div.appendChild(bc);
+            }
+
+            const price = document.createElement('div');
+            price.className = 'price';
+            price.textContent = '৳' + p.price;
+            div.appendChild(price);
+
+            const stock = document.createElement('div');
+            stock.className = 'stock';
+            stock.textContent = 'Stock: ' + p.stock;
+            div.appendChild(stock);
+
+            grid.appendChild(div);
+        });
+    });
+}
+
+let searchTimeout;
+document.getElementById('posSearch').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(searchProducts, 300);
+});
+
+function showToast(msg, type) {
+    const t = document.getElementById('pos-toast');
+    t.textContent = msg;
+    t.className = type || '';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+{% endif %}
+{% endblock %}

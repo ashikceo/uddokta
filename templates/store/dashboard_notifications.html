@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notifications - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>Notifications</span>
+    </div>
+
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1>Notifications</h1>
+        <a href="{% url 'notification_read_all' %}" class="btn btn-outline" style="font-size:12px;">Mark All Read</a>
+    </div>
+
+    {% if notifications %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for n in notifications %}
+        <a href="{% url 'notification_read' n.id %}" style="display:block;text-decoration:none;padding:15px;border:1px solid #eee;border-radius:6px;{% if not n.is_read %}border-left:4px solid #e74847;background:#fef9f9;{% endif %}">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <strong style="color:#333;font-size:14px;">{{ n.title }}</strong>
+                    {% if n.message %}<p style="color:#666;font-size:12px;margin:4px 0 0;">{{ n.message }}</p>{% endif %}
+                </div>
+                <div style="text-align:right;">
+                    <span style="background:{% if n.type == 'order_placed' %}#28a745{% elif n.type == 'wallet_credit' %}#17a2b8{% else %}#6c757d{% endif %};color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;">{{ n.get_type_display }}</span>
+                    <p style="color:#aaa;font-size:10px;margin:4px 0 0;">{{ n.created|timesince }} ago</p>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:80px 0;">
+        <i class="fa fa-bell" style="font-size:48px;color:#ddd;margin-bottom:15px;"></i>
+        <h3>No notifications</h3>
+        <p style="color:#888;">You're all caught up!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

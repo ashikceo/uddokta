@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Union Agent - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_union_agents' %}">Union Agents</a> / <span>Add Union Agent</span>
+    </div>
+    <div class="page-header"><h1>Add New Union Agent</h1></div>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <div class="dashboard-form-container" style="max-width:500px;">
+        <form method="POST" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            <div class="dashboard-form-section">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fa fa-user-plus"></i></div>
+                    <div>
+                        <h3>Union Agent Information</h3>
+                        <p>Create a new union agent under your dealership</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="form-group">
+                        <label>Login Email <span class="required">*</span></label>
+                        <input type="email" name="email" class="form-control" required placeholder="Email used for login">
+                    </div>
+                    <div class="form-group">
+                        <label>Login Password <span class="required">*</span></label>
+                        <input type="password" name="password" class="form-control" required placeholder="Min 4 characters">
+                    </div>
+                    <div class="form-group">
+                        <label>Union Agent Name <span class="required">*</span></label>
+                        <input type="text" name="name" class="form-control" required placeholder="Enter union agent name">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="text" name="phone" class="form-control" placeholder="Phone number">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" class="form-control" placeholder="Brief description of the union agent"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Profile Image</label>
+                        <input type="file" name="profile_image" class="form-control" accept="image/*">
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary"><i class="fa fa-plus-circle"></i> Add Union Agent</button>
+                <a href="{% url 'dashboard_union_agents' %}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

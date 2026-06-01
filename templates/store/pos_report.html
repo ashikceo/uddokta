@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}POS Report - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'pos_dashboard' %}">POS</a> / <span>Report</span>
+    </div>
+
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1>POS Sales Report</h1>
+        <form method="GET" style="display:flex;gap:8px;align-items:center;">
+            <label style="font-size:13px;color:#666;">Date:</label>
+            <input type="date" name="date" value="{{ date|date:'Y-m-d' }}" onchange="this.form.submit()" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
+            <a href="{% url 'pos_dashboard' %}" class="btn btn-outline" style="font-size:12px;"><i class="fa fa-plus"></i> New Sale</a>
+        </form>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:25px;">
+        <div style="border:1px solid #eee;padding:20px;text-align:center;border-radius:8px;">
+            <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 5px;">Total Sales</p>
+            <h2 style="font-size:28px;color:#28a745;margin:0;">৳{{ total_sales|floatformat:0 }}</h2>
+        </div>
+        <div style="border:1px solid #eee;padding:20px;text-align:center;border-radius:8px;">
+            <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 5px;">Orders</p>
+            <h2 style="font-size:28px;color:#e74847;margin:0;">{{ order_count }}</h2>
+        </div>
+        <div style="border:1px solid #eee;padding:20px;text-align:center;border-radius:8px;">
+            <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 5px;">Items Sold</p>
+            <h2 style="font-size:28px;color:#17a2b8;margin:0;">{{ total_items }}</h2>
+        </div>
+        <div style="border:1px solid #eee;padding:20px;text-align:center;border-radius:8px;">
+            <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 5px;">Avg per Order</p>
+            <h2 style="font-size:28px;color:#6f42c1;margin:0;">
+                ৳{% if order_count > 0 %}{{ total_sales|divisibleby:order_count|floatformat:0 }}{% else %}0{% endif %}
+            </h2>
+        </div>
+    </div>
+
+    {% if payment_breakdown %}
+    <div style="border:1px solid #eee;border-radius:8px;padding:20px;margin-bottom:25px;">
+        <h4 style="margin:0 0 12px;color:#333;">Payment Breakdown</h4>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
+            {% for label, amount in payment_breakdown.items %}
+            <div style="background:#f8f9fa;padding:12px;border-radius:6px;text-align:center;">
+                <p style="font-size:11px;color:#888;margin:0 0 4px;">{{ label }}</p>
+                <strong style="font-size:16px;color:#333;">৳{{ amount|floatformat:0 }}</strong>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if orders %}
+    <h3 style="margin-bottom:12px;color:#333;">Orders on {{ date|date:"d M Y" }}</h3>
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>Invoice</th>
+                <th>Time</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Payment</th>
+                <th>Total</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td><strong>#{{ order.invoice_number }}</strong></td>
+                <td>{{ order.created|date:"h:i A" }}</td>
+                <td>{{ order.customer_name|default:'Walk-in' }}</td>
+                <td>{{ order.items.count }}</td>
+                <td>{{ order.get_payment_method_display }}</td>
+                <td><strong>৳{{ order.total|floatformat:0 }}</strong></td>
+                <td><a href="{% url 'pos_order_detail' order.id %}" class="btn btn-outline" style="padding:4px 12px;font-size:11px;">View</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:60px 0;border:1px solid #eee;border-radius:8px;">
+        <i class="fa fa-calendar" style="font-size:48px;color:#ddd;margin-bottom:10px;"></i>
+        <p style="color:#888;">No sales on this date.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

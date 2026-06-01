@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Payment Method{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:600px;margin:40px auto;padding:0 15px;">
+    <h2 style="text-align:center;margin-bottom:30px;">Select Payment Method</h2>
+
+    {% if error %}
+    <div class="alert alert-error" style="padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;color:#dc2626;margin-bottom:20px;font-size:14px;">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'payment_process' order.id %}">
+        {% csrf_token %}
+
+        <!-- Online Payment -->
+        <div class="payment-option" style="border:1px solid #ddd;border-radius:8px;padding:20px;margin-bottom:12px;cursor:pointer;transition:all 0.3s;background:#f9f9f9;" onclick="selectMethod('sslcommerz')">
+            <label style="cursor:pointer;display:flex;align-items:center;gap:15px;">
+                <input type="radio" name="payment_method" value="sslcommerz" id="method_sslcommerz" {% if not selected_method or selected_method == 'sslcommerz' %}checked{% endif %} style="width:18px;height:18px;">
+                <div>
+                    <strong style="font-size:16px;">Online Payment (Card / bKash / Nagad / Rocket)</strong>
+                    <p style="color:#666;margin:5px 0 0;font-size:13px;">Pay securely via SSLCommerz</p>
+                </div>
+            </label>
+        </div>
+
+        <!-- Manual Payment Methods -->
+        {% for method in manual_methods %}
+        <div class="payment-option manual-method" style="border:1px solid #ddd;border-radius:8px;padding:20px;margin-bottom:12px;cursor:pointer;transition:all 0.3s;{% if selected_method == method.name %}background:#f0fdf4;border-color:#86efac;{% else %}background:#fff;{% endif %}" onclick="selectMethod('{{ method.name }}')">
+            <label style="cursor:pointer;display:flex;align-items:center;gap:15px;">
+                <input type="radio" name="payment_method" value="{{ method.name }}" id="method_{{ forloop.counter }}" {% if selected_method == method.name %}checked{% endif %} style="width:18px;height:18px;" onchange="toggleManualFields()">
+                <div>
+                    <strong style="font-size:16px;">{{ method.name }}</strong>
+                    <p style="color:#666;margin:5px 0 0;font-size:13px;">Send to <strong>{{ method.account_number }}</strong> ({{ method.account_type }})</p>
+                </div>
+            </label>
+            <div class="manual-fields" id="manualFields_{{ forloop.counter }}" style="{% if selected_method == method.name %}margin-top:15px;{% else %}display:none;margin-top:15px;{% endif %}">
+                {% if method.instructions %}
+                <p style="font-size:13px;color:#555;margin:0 0 10px 0;padding:10px;background:#f0fdf4;border-radius:6px;">{{ method.instructions }}</p>
+                {% endif %}
+                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Transaction ID *</label>
+                <input type="text" name="transaction_id" class="form-control" placeholder="Enter your {{ method.name }} Transaction ID" value="{{ transaction_id|default:'' }}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;">
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Cash on Delivery -->
+        <div class="payment-option" style="border:1px solid #ddd;border-radius:8px;padding:20px;margin-bottom:15px;cursor:pointer;transition:all 0.3s;{% if selected_method == 'cod' %}background:#f0fdf4;border-color:#86efac;{% else %}background:#fff;{% endif %}" onclick="selectMethod('cod')">
+            <label style="cursor:pointer;display:flex;align-items:center;gap:15px;">
+                <input type="radio" name="payment_method" value="cod" id="method_cod" {% if selected_method == 'cod' %}checked{% endif %} style="width:18px;height:18px;">
+                <div>
+                    <strong style="font-size:16px;">Cash on Delivery</strong>
+                    <p style="color:#666;margin:5px 0 0;font-size:13px;">Pay when you receive your order</p>
+                </div>
+            </label>
+        </div>
+
+        <div style="margin-top:25px;text-align:center;">
+            <button type="submit" style="padding:14px 40px;background:#e74847;color:#fff;border:none;border-radius:4px;font-size:16px;cursor:pointer;">Continue to Payment</button>
+        </div>
+    </form>
+</div>
+
+<script>
+function selectMethod(value) {
+    document.querySelector('input[name="payment_method"][value="' + value + '"]').checked = true;
+    toggleManualFields();
+}
+
+function toggleManualFields() {
+    var selected = document.querySelector('input[name="payment_method"]:checked');
+    var allFields = document.querySelectorAll('.manual-fields');
+    allFields.forEach(function(f) { f.style.display = 'none'; });
+
+    if (selected) {
+        var idx = selected.id.replace('method_', '');
+        var fields = document.getElementById('manualFields_' + idx);
+        if (fields) {
+            fields.style.display = 'block';
+            // Scroll to the fields
+            setTimeout(function() { fields.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
+        }
+        // Highlight selected option
+        document.querySelectorAll('.payment-option').forEach(function(el) {
+            el.style.background = '#fff';
+            el.style.borderColor = '#ddd';
+        });
+        var parent = selected.closest('.payment-option') || selected.parentElement.closest('.payment-option');
+        if (parent) {
+            parent.style.background = '#f0fdf4';
+            parent.style.borderColor = '#86efac';
+        }
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleManualFields();
+});
+</script>
+{% endblock %}

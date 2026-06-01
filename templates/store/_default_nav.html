@@ -1,0 +1,12 @@
+{% for item in nav_items %}
+{% if item.login_required and not user.is_authenticated %}
+{% elif item.logout_required and user.is_authenticated %}
+{% else %}
+<li>
+    <a href="{% if item.url_type == 'named_url' %}{% url item.url %}{% else %}{{ item.url }}{% endif %}"
+       class="{% if item.match_startswith %}{% if item.url in request.path %}active{% endif %}{% else %}{% if request.resolver_match.url_name == item.url %}active{% endif %}{% endif %}">
+        {{ item.title }}
+    </a>
+</li>
+{% endif %}
+{% endfor %}

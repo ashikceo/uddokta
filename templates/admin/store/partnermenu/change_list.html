@@ -1,0 +1,296 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.partner-menu-wrap { max-width: 100%; }
+.partner-group {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.partner-group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+.partner-group-header:hover { background: #e9ecef; }
+.partner-group-header .toggle-icon {
+  font-size: 14px;
+  color: #6c757d;
+  transition: transform 0.2s;
+  width: 16px;
+  text-align: center;
+}
+.partner-group-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+.partner-group-header .partner-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2c3e50;
+  flex: 1;
+}
+.partner-group-header .partner-name a { color: #2c3e50; text-decoration: none; }
+.partner-group-header .partner-name a:hover { color: #e74847; }
+.partner-group-header .partner-count {
+  font-size: 12px;
+  color: #6c757d;
+  background: #dee2e6;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+.partner-group-body { padding: 0; }
+.partner-group-body.collapsed { display: none; }
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px 10px 28px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.15s;
+}
+.menu-item:last-child { border-bottom: none; }
+.menu-item:hover { background: #f8f9fa; }
+.menu-item.has-children { background: #fafbfc; }
+.menu-item.has-children:hover { background: #f0f1f3; }
+
+.menu-item .item-grip {
+  color: #ccc;
+  font-size: 12px;
+  cursor: grab;
+  width: 16px;
+  text-align: center;
+}
+.menu-item .item-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  min-width: 0;
+}
+.menu-item .item-title a { color: #333; text-decoration: none; }
+.menu-item .item-title a:hover { color: #e74847; }
+.menu-item .item-title .sub-indicator {
+  color: #999;
+  font-size: 11px;
+  font-weight: 400;
+  margin-left: 6px;
+}
+.menu-item .item-url {
+  font-size: 11px;
+  color: #888;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+}
+.menu-item .item-order {
+  font-size: 11px;
+  color: #999;
+  min-width: 30px;
+  text-align: center;
+}
+.menu-item .item-status {
+  min-width: 60px;
+  text-align: center;
+}
+.menu-item .item-actions {
+  display: flex;
+  gap: 4px;
+  min-width: 80px;
+  justify-content: flex-end;
+}
+.menu-item .item-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #6c757d;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.menu-item .item-actions a:hover { background: #e74847; color: #fff; }
+
+.children-list {
+  padding: 0;
+}
+.child-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px 8px 50px;
+  border-top: 1px solid #f5f5f5;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+.child-item:hover { background: #f8f9fa; }
+.child-item .child-branch {
+  color: #adb5bd;
+  font-size: 11px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.child-item .child-title { flex: 1; color: #555; }
+.child-item .child-title a { color: #555; text-decoration: none; }
+.child-item .child-title a:hover { color: #e74847; }
+.child-item .child-url {
+  font-size: 11px;
+  color: #999;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+}
+.child-item .child-status { min-width: 60px; text-align: center; }
+.child-item .child-actions { min-width: 60px; text-align: right; }
+.child-item .child-actions a {
+  color: #6c757d;
+  font-size: 11px;
+  text-decoration: none;
+  margin: 0 3px;
+}
+.child-item .child-actions a:hover { color: #e74847; }
+
+.empty-state {
+  padding: 30px;
+  text-align: center;
+  color: #999;
+}
+
+/* Object tools override */
+.object-tools { margin-bottom: 16px; }
+.object-tools a { background: #e74847; border-radius: 4px; }
+.object-tools a:hover { background: #cb3231; }
+
+/* Changelist form override */
+#changelist { background: transparent; border: none; box-shadow: none; }
+#changelist .actions { margin-bottom: 16px; padding: 10px 16px; background: #fff; border: 1px solid #dee2e6; border-radius: 8px; }
+#changelist .actions select { min-width: 150px; }
+#changelist .actions label { display: flex; align-items: center; gap: 8px; }
+#changelist .actions button { background: #e74847; color: #fff; border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; }
+#changelist .actions button:hover { background: #cb3231; }
+
+/* Search */
+#changelist-search { margin-bottom: 16px; }
+#changelist-search input[type="text"] { border: 1px solid #dee2e6; border-radius: 4px; padding: 8px 12px; }
+#changelist-search input[type="submit"] { background: #2c3e50; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+
+/* Filter */
+#changelist-filter { margin-bottom: 16px; }
+
+@media (max-width: 768px) {
+  .menu-item { flex-wrap: wrap; padding: 8px 12px 8px 20px; }
+  .menu-item .item-url { display: none; }
+  .child-item { padding: 6px 12px 6px 30px; flex-wrap: wrap; }
+  .child-item .child-url { display: none; }
+}
+</style>
+{% endblock %}
+
+{% block result_list %}
+<div class="partner-menu-wrap">
+  {% if grouped_menus %}
+    {% for partner, items in grouped_menus.items %}
+    <div class="partner-group">
+      <div class="partner-group-header" onclick="toggleGroup(this)">
+        <span class="toggle-icon">▼</span>
+        <span class="partner-name">
+          {% if partner %}
+          <a href="{% url 'custom_admin:store_partner_change' partner.pk %}">{{ partner.name }}</a>
+          {% else %}
+          <em style="color:#999;">No Partner</em>
+          {% endif %}
+        </span>
+        <span class="partner-count">{{ items|length }} item{{ items|length|pluralize }}</span>
+      </div>
+      <div class="partner-group-body">
+        {% for item in items %}
+        <div class="menu-item {% if item.children.exists %}has-children{% endif %}">
+          <span class="item-grip">⋮</span>
+          <span class="item-title">
+            <a href="{% url 'custom_admin:store_partnernavmenu_change' item.pk %}">{{ item.title }}</a>
+          </span>
+          <span class="item-url">{{ item.url|default:"—" }}</span>
+          <span class="item-order">#{{ item.order }}</span>
+          <span class="item-status">
+            {% if item.is_active %}
+            <span style="color:#28a745;font-size:11px;font-weight:600;">Active</span>
+            {% else %}
+            <span style="color:#dc3545;font-size:11px;">Inactive</span>
+            {% endif %}
+          </span>
+          <span class="item-actions">
+            <a href="{% url 'custom_admin:store_partnernavmenu_change' item.pk %}" title="Edit"><i class="fa fa-pencil"></i></a>
+            <a href="{% url 'custom_admin:store_partnernavmenu_delete' item.pk %}" title="Delete"><i class="fa fa-trash"></i></a>
+          </span>
+        </div>
+          {% if item.children.exists %}
+          <div class="children-list">
+            {% for child in item.children.all %}
+            <div class="child-item">
+              <span class="child-branch">└─</span>
+              <span class="child-title">
+                <a href="{% url 'custom_admin:store_partnernavmenu_change' child.pk %}">{{ child.title }}</a>
+                <span style="color:#999;font-size:11px;font-weight:400;">(sub-menu)</span>
+              </span>
+              <span class="child-url">{{ child.url|default:"—" }}</span>
+              <span class="child-status">
+                {% if child.is_active %}
+                <span style="color:#28a745;font-size:11px;font-weight:600;">Active</span>
+                {% else %}
+                <span style="color:#dc3545;font-size:11px;">Inactive</span>
+                {% endif %}
+              </span>
+              <span class="child-actions">
+                <a href="{% url 'custom_admin:store_partnernavmenu_change' child.pk %}">Edit</a>
+                <a href="{% url 'custom_admin:store_partnernavmenu_delete' child.pk %}">Del</a>
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% empty %}
+        <div class="empty-state">No menu items for this partner.</div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <p style="font-size:16px;margin-bottom:8px;">No partner menu items yet.</p>
+      <p><a href="{% url 'custom_admin:store_partnernavmenu_add' %}" style="color:#e74847;">Add your first menu item</a></p>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+function toggleGroup(header) {
+  var body = header.nextElementSibling;
+  var icon = header.querySelector('.toggle-icon');
+  if (body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    icon.classList.remove('collapsed');
+  } else {
+    body.classList.add('collapsed');
+    icon.classList.add('collapsed');
+  }
+}
+</script>
+{% endblock %}

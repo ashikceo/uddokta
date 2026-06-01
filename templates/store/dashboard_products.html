@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Products - Uddoktar Dokan{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var selectAll = document.getElementById('select-all');
+    var checkboxes = document.querySelectorAll('.product-checkbox');
+    var bulkBar = document.getElementById('bulk-action-bar');
+    var selectedCount = document.getElementById('selected-count');
+
+    function updateBulkBar() {
+        var checked = document.querySelectorAll('.product-checkbox:checked').length;
+        if (checked > 0) {
+            bulkBar.style.display = 'flex';
+            selectedCount.textContent = checked + ' product(s) selected';
+        } else {
+            bulkBar.style.display = 'none';
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+            updateBulkBar();
+        });
+    }
+
+    checkboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateBulkBar);
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>My Products</span>
+    </div>
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <h1>My Products</h1>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="{% url 'dashboard_products_export_csv' %}" class="btn btn-outline" style="padding:8px 16px; font-size:13px;">
+                <i class="fa fa-download"></i> CSV
+            </a>
+            <a href="{% url 'dashboard_products_export_pdf' %}" class="btn btn-outline" style="padding:8px 16px; font-size:13px;">
+                <i class="fa fa-file-pdf"></i> PDF
+            </a>
+            <a href="{% url 'dashboard_trash_list' %}" class="btn btn-outline" style="padding:8px 16px; font-size:13px;">
+                <i class="fa fa-trash"></i> Trash{% if trashed_count %} ({{ trashed_count }}){% endif %}
+            </a>
+            <a href="{% url 'dashboard_product_create' %}" class="btn btn-primary">+ Add Product</a>
+        </div>
+    </div>
+
+    <form method="GET" style="margin-bottom:15px; display:flex; gap:8px; align-items:center;">
+        <input type="text" name="q" class="form-control" placeholder="Search by name, SKU, or generic name..." value="{{ query }}" style="max-width:400px;">
+        <button type="submit" class="btn btn-outline" style="padding:8px 16px;"><i class="fa fa-search"></i> Search</button>
+        {% if query %}
+        <a href="{% url 'dashboard_products' %}" class="btn btn-outline" style="padding:8px 16px;">Clear</a>
+        {% endif %}
+    </form>
+
+    <form id="bulk-form" method="POST" action="{% url 'dashboard_product_bulk_delete' %}">
+        {% csrf_token %}
+
+        <div id="bulk-action-bar" style="display:none; align-items:center; gap:12px; padding:10px 16px; background:#fff3cd; border:1px solid #ffeeba; border-radius:6px; margin-bottom:15px;">
+            <span id="selected-count" style="font-size:13px; font-weight:600; color:#856404;"></span>
+            <button type="submit" class="btn btn-primary" style="background:#dc3545; padding:6px 16px; font-size:12px; margin-left:auto;" onclick="return confirm('Move selected products to trash?');">
+                <i class="fa fa-trash"></i> Move to Trash
+            </button>
+        </div>
+
+        {% if products %}
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>SKU</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Cost Price</th>
+                    <th>Profit</th>
+                    <th>Stock</th>
+                    <th>Available</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td><input type="checkbox" name="product_ids" value="{{ product.id }}" class="product-checkbox"></td>
+                    <td class="product-thumb">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                        {% else %}
+                        <img src="/static/img/placeholder_60x60.png" alt="">
+                        {% endif %}
+                    </td>
+                    <td>{{ product.name|truncatechars:50 }}</td>
+                    <td style="font-size:11px;color:#888;">{{ product.sku|default:'—' }}</td>
+                    <td>{{ product.category.name|default:'—' }}</td>
+                    <td>৳{{ product.price }}</td>
+                    <td>{% if product.cost_price is not None %}৳{{ product.cost_price }}{% else %}<span style="color:#999;">—</span>{% endif %}</td>
+                    <td>
+                        {% if product.profit is not None %}
+                        <span style="color:{% if product.profit >= 0 %}#28a745{% else %}#dc3545{% endif %};font-weight:600;">৳{{ product.profit }}</span>
+                        {% else %}
+                        <span style="color:#999;">—</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ product.stock }}</td>
+                    <td>{{ product.available|yesno:"Yes,No" }}</td>
+                    <td>
+                        <a href="{% url 'dashboard_product_edit' product.id %}" class="btn btn-outline" style="padding:4px 12px; font-size:11px;">Edit</a>
+                        <a href="{% url 'dashboard_product_duplicate' product.id %}" class="btn btn-outline" style="padding:4px 12px; font-size:11px; color:#28a745; border-color:#28a745;">Duplicate</a>
+                        <a href="{% url 'dashboard_product_delete' product.id %}" class="btn btn-primary" style="padding:4px 12px; font-size:11px; background:#999; border-color:#999;">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align:center; padding:60px 0;">
+            <i class="fa fa-cube" style="font-size:48px; color:#ddd; margin-bottom:20px;"></i>
+            <h3>No products found.</h3>
+            {% if query %}
+            <p style="color:#888;">No products matching "{{ query }}".</p>
+            <a href="{% url 'dashboard_products' %}" class="btn btn-outline" style="margin-top:10px;">Clear Search</a>
+            {% else %}
+            <a href="{% url 'dashboard_product_create' %}" class="btn btn-primary" style="margin-top:15px;">Add Your First Product</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </form>
+
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <div style="display:flex; justify-content:center; align-items:center; gap:6px; margin-top:20px; flex-wrap:wrap;">
+        {% if page_obj.has_previous %}
+        <a href="?page=1{% if query %}&q={{ query }}{% endif %}" class="btn btn-outline" style="padding:6px 12px; font-size:12px;">&laquo; First</a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="btn btn-outline" style="padding:6px 12px; font-size:12px;">&lsaquo; Prev</a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+            <span style="padding:6px 14px; background:#e74847; color:#fff; border-radius:4px; font-size:12px; font-weight:600;">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-5' and num < page_obj.number|add:'5' %}
+            <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}" style="padding:6px 14px; border:1px solid #ddd; border-radius:4px; font-size:12px; color:#333; text-decoration:none;">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="btn btn-outline" style="padding:6px 12px; font-size:12px;">Next &rsaquo;</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}" class="btn btn-outline" style="padding:6px 12px; font-size:12px;">Last &raquo;</a>
+        {% endif %}
+    </div>
+    <div style="text-align:center; color:#888; font-size:12px; margin-top:8px;">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} total products)
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

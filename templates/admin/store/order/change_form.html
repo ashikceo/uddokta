@@ -1,0 +1,18 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+{% if original %}
+<li>
+    <a href="{% url 'admin:export-single-order-csv' original.id %}" class="btn" style="background:#17a2b8;color:#fff;padding:8px 15px;border-radius:4px;text-decoration:none;">
+        <i class="fa fa-download"></i> {% trans "Download CSV" %}
+    </a>
+</li>
+<li>
+    <a href="{% url 'admin:print-order-invoice' original.id %}" target="_blank" class="btn" style="background:#28a745;color:#fff;padding:8px 15px;border-radius:4px;text-decoration:none;">
+        <i class="fa fa-print"></i> {% trans "Print Invoice" %}
+    </a>
+</li>
+{% endif %}
+{{ block.super }}
+{% endblock %}

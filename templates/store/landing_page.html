@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if landing.meta_title %}{{ landing.meta_title }}{% else %}{{ landing.title }} - {{ site_name }}{% endif %}{% endblock %}
+
+{% block meta %}{% if landing.meta_description %}<meta name="description" content="{{ landing.meta_description }}">{% endif %}{% if landing.meta_keywords %}<meta name="keywords" content="{{ landing.meta_keywords }}">{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+:root {
+    --landing-primary: {{ landing.primary_color|default:'#e74847' }};
+    --landing-secondary: {{ landing.secondary_color|default:'#333333' }};
+}
+.landing-hero {
+    background: {% if landing.hero_background %}url('{{ landing.hero_background.url }}') center/cover no-repeat{% else %}linear-gradient(135deg, var(--landing-primary), var(--landing-secondary)){% endif %};
+    position: relative;
+    padding: 120px 20px;
+    text-align: center;
+    color: #fff;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.landing-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: {{ landing.hero_overlay_color|default:'rgba(0,0,0,0.5)' }};
+}
+.landing-hero-content { position: relative; z-index: 1; max-width: 800px; }
+.landing-hero h1 { font-size: 3rem; margin: 0 0 20px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.landing-hero p { font-size: 1.2rem; margin: 0 0 30px; opacity: 0.95; line-height: 1.6; }
+.landing-cta-btn {
+    display: inline-block;
+    padding: 15px 40px;
+    background: var(--landing-primary);
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.landing-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); color: #fff; }
+
+/* About Section */
+.landing-about { padding: 80px 0; background: #fff; }
+.landing-about .container { display: flex; gap: 40px; align-items: center; flex-wrap: wrap; }
+.landing-about-text { flex: 1; min-width: 280px; }
+.landing-about-text h2 { font-size: 2rem; margin: 0 0 20px; color: var(--landing-primary); }
+.landing-about-text p { line-height: 1.8; color: #555; }
+.landing-about-image { flex: 1; min-width: 280px; }
+.landing-about-image img { width: 100%; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
+
+/* Products Section */
+.landing-products { padding: 80px 0; background: #f8f9fa; text-align: center; }
+.landing-products h2 { font-size: 2rem; margin: 0 0 40px; color: var(--landing-primary); }
+.landing-product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; }
+
+/* Stats Section */
+.landing-stats { padding: 80px 0; background: var(--landing-primary); color: #fff; text-align: center; }
+.landing-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; }
+.landing-stat-value { font-size: 2.5rem; font-weight: 700; margin: 0 0 5px; }
+.landing-stat-label { font-size: 1rem; opacity: 0.85; }
+
+/* Partners Section */
+.landing-partners { padding: 80px 0; background: #fff; text-align: center; }
+.landing-partners h2 { font-size: 2rem; margin: 0 0 40px; color: var(--landing-primary); }
+.landing-partner-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; }
+.landing-partner-item {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    width: 160px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.landing-partner-item:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+.landing-partner-item img { max-width: 100px; max-height: 60px; object-fit: contain; margin-bottom: 10px; }
+.landing-partner-item p { margin: 0; font-weight: 500; color: #333; }
+
+/* Bottom CTA */
+.landing-bottom-cta {
+    padding: 80px 20px;
+    background: linear-gradient(135deg, var(--landing-primary), var(--landing-secondary));
+    text-align: center;
+    color: #fff;
+}
+.landing-bottom-cta h2 { font-size: 2.2rem; margin: 0 0 15px; }
+.landing-bottom-cta p { font-size: 1.1rem; margin: 0 0 30px; opacity: 0.9; }
+</style>
+
+<!-- Hero Section -->
+<section class="landing-hero">
+    <div class="landing-hero-content">
+        <h1>{{ landing.hero_title|default:landing.title }}</h1>
+        <p>{{ landing.hero_subtitle|default:'' }}</p>
+        {% if landing.hero_cta_link %}
+        <a href="{{ landing.hero_cta_link }}" class="landing-cta-btn">{{ landing.hero_cta_text|default:'Shop Now' }}</a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- About Section -->
+{% if landing.about_content %}
+<section class="landing-about">
+    <div class="container">
+        <div class="landing-about-text">
+            <h2>{{ landing.about_heading|default:'About Us' }}</h2>
+            <p>{{ landing.about_content|linebreaks }}</p>
+        </div>
+        {% if landing.about_image %}
+        <div class="landing-about-image">
+            <img src="{{ landing.about_image.url }}" alt="{{ landing.about_heading }}">
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Featured Products -->
+{% if landing.featured_products.all %}
+<section class="landing-products">
+    <div class="container">
+        <h2>{{ landing.featured_products_heading|default:'Featured Products' }}</h2>
+        <div class="landing-product-grid">
+            {% for product in landing.featured_products.all %}
+            <div style="background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 2px 15px rgba(0,0,0,0.08); transition:transform 0.3s;">
+                <a href="{% url 'product_detail' product.slug %}">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width:100%; height:200px; object-fit:cover;">
+                    {% else %}
+                    <div style="height:200px; background:#eee; display:flex; align-items:center; justify-content:center; color:#999;">No Image</div>
+                    {% endif %}
+                </a>
+                <div style="padding:15px;">
+                    <h4 style="margin:0 0 8px; font-size:14px;"><a href="{% url 'product_detail' product.slug %}" style="text-decoration:none; color:#333;">{{ product.name|truncatechars:40 }}</a></h4>
+                    <div style="font-weight:700; color:var(--landing-primary); font-size:16px;">
+                        ৳{{ product.price }}
+                        {% if product.old_price %}
+                        <span style="text-decoration:line-through; color:#999; font-weight:400; font-size:13px; margin-left:5px;">৳{{ product.old_price }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Stats Section -->
+{% if landing.show_stats %}
+<section class="landing-stats">
+    <div class="container">
+        <div class="landing-stats-grid">
+            <div>
+                <div class="landing-stat-value">{{ landing.stat_1_value }}</div>
+                <div class="landing-stat-label">{{ landing.stat_1_label }}</div>
+            </div>
+            <div>
+                <div class="landing-stat-value">{{ landing.stat_2_value }}</div>
+                <div class="landing-stat-label">{{ landing.stat_2_label }}</div>
+            </div>
+            <div>
+                <div class="landing-stat-value">{{ landing.stat_3_value }}</div>
+                <div class="landing-stat-label">{{ landing.stat_3_label }}</div>
+            </div>
+            <div>
+                <div class="landing-stat-value">{{ landing.stat_4_value }}</div>
+                <div class="landing-stat-label">{{ landing.stat_4_label }}</div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Partners Section -->
+{% if landing.show_partners %}
+<section class="landing-partners">
+    <div class="container">
+        <h2>{{ landing.partners_heading|default:'Our Partners' }}</h2>
+        <div class="landing-partner-grid">
+            {% for partner in landing.featured_products.all|slice:":1" %}
+            {% empty %}
+            {% endfor %}
+            {% for partner in all_partners %}
+            <a href="{% url 'partner_detail' partner.slug %}" style="text-decoration:none;">
+                <div class="landing-partner-item">
+                    {% if partner.logo %}
+                    <img src="{{ partner.logo.url }}" alt="{{ partner.name }}">
+                    {% else %}
+                    <div style="width:80px; height:60px; background:#eee; border-radius:8px; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:12px;">Logo</div>
+                    {% endif %}
+                    <p>{{ partner.name }}</p>
+                </div>
+            </a>
+            {% empty %}
+            <p style="color:#999;">No partners available.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Bottom CTA -->
+{% if landing.bottom_cta_link %}
+<section class="landing-bottom-cta">
+    <div class="container">
+        <h2>{{ landing.bottom_cta_heading|default:'Ready to Get Started?' }}</h2>
+        <p>{{ landing.bottom_cta_text|default:'' }}</p>
+        <a href="{{ landing.bottom_cta_link }}" class="landing-cta-btn" style="background:#fff; color:var(--landing-primary);">Get Started</a>
+    </div>
+</section>
+{% endif %}
+
+<style>{{ landing.custom_css|default:'' }}</style>
+{% endblock %}

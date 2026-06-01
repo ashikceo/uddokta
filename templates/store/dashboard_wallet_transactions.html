@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Transaction History - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'dashboard_wallet' %}">Wallet</a> / <span>Transactions</span>
+    </div>
+
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1>Transaction History</h1>
+        <a href="{% url 'dashboard_wallet' %}" class="btn btn-outline" style="font-size:12px;"><i class="fa fa-arrow-left"></i> Back to Wallet</a>
+    </div>
+
+    <div style="margin-bottom:20px;">
+        <form method="get" style="display:flex;gap:10px;align-items:center;">
+            <label style="font-size:13px;color:#666;">Filter by type:</label>
+            <select name="type" onchange="this.form.submit()" style="padding:6px 12px;border:1px solid #ddd;border-radius:4px;">
+                <option value="">All Transactions</option>
+                <option value="order_credit" {% if current_type == 'order_credit' %}selected{% endif %}>Order Credit</option>
+                <option value="manual_credit" {% if current_type == 'manual_credit' %}selected{% endif %}>Manual Credit</option>
+                <option value="manual_debit" {% if current_type == 'manual_debit' %}selected{% endif %}>Manual Debit</option>
+                <option value="withdrawal" {% if current_type == 'withdrawal' %}selected{% endif %}>Withdrawal</option>
+                <option value="withdrawal_fee" {% if current_type == 'withdrawal_fee' %}selected{% endif %}>Withdrawal Fee</option>
+                <option value="commission_refund" {% if current_type == 'commission_refund' %}selected{% endif %}>Commission Refund</option>
+            </select>
+            <span style="font-size:13px;color:#888;">Balance: <strong>৳{{ wallet.balance|floatformat:0 }}</strong></span>
+        </form>
+    </div>
+
+    {% if transactions %}
+    <div style="overflow-x:auto;">
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>Reference</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Balance</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for txn in transactions %}
+            <tr>
+                <td style="font-size:11px;color:#888;">{{ txn.reference_id }}</td>
+                <td>
+                    <span style="background:{% if txn.type == 'order_credit' %}#28a745{% elif txn.type == 'withdrawal' %}#dc3545{% elif txn.type == 'manual_credit' %}#17a2b8{% elif txn.type == 'manual_debit' %}#dc3545{% elif txn.type == 'withdrawal_fee' %}#ffc107{% elif txn.type == 'signup_bonus' %}#6f42c1{% elif txn.type == 'bonus_release' %}#28a745{% else %}#6c757d{% endif %};color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;white-space:nowrap;">
+                        {{ txn.get_type_display }}
+                    </span>
+                </td>
+                <td style="font-size:12px;">{{ txn.description|truncatechars:60 }}</td>
+                <td style="color:{% if txn.amount >= 0 %}#28a745{% else %}#dc3545{% endif %};font-weight:600;">
+                    {% if txn.amount >= 0 %}+{% endif %}৳{{ txn.amount|floatformat:0 }}
+                </td>
+                <td>৳{{ txn.balance_after|floatformat:0 }}</td>
+                <td style="font-size:11px;color:#888;">{{ txn.created|date:"d M Y H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    {% if transactions.has_other_pages %}
+    <div style="text-align:center;margin-top:25px;">
+        {% if transactions.has_previous %}
+        <a href="?page={{ transactions.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}" class="btn btn-outline" style="font-size:12px;">Previous</a>
+        {% endif %}
+        <span style="margin:0 15px;color:#888;">Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
+        {% if transactions.has_next %}
+        <a href="?page={{ transactions.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}" class="btn btn-outline" style="font-size:12px;">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div style="text-align:center;padding:60px 0;border:1px solid #eee;border-radius:8px;">
+        <i class="fa fa-exchange" style="font-size:48px;color:#ddd;margin-bottom:15px;"></i>
+        <h3>No transactions found</h3>
+        <p style="color:#666;">No transactions match your filter criteria.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

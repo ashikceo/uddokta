@@ -1,0 +1,176 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+<style>
+  .stats { display:flex; gap:20px; margin-bottom:20px; flex-wrap:wrap; }
+  .stat-box { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px 24px; box-shadow:0 2px 8px rgba(0,0,0,0.06); flex:1; min-width:150px; }
+  .stat-box .num { font-size:26px; font-weight:700; color:#2c3e50; }
+  .stat-box .lbl { font-size:11px; color:#6c757d; text-transform:uppercase; letter-spacing:0.5px; }
+  table.wide { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  table.wide th { background:#f8f9fa; padding:12px 14px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; color:#6c757d; border-bottom:2px solid #dee2e6; text-align:left; }
+  table.wide td { padding:10px 14px; font-size:13px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  table.wide tr:hover td { background:#f8f9fa; }
+  .badge-green { background:#28a745; color:#fff; padding:3px 12px; border-radius:12px; font-size:10px; font-weight:600; display:inline-block; }
+  .badge-red { background:#dc3545; color:#fff; padding:3px 12px; border-radius:12px; font-size:10px; font-weight:600; display:inline-block; }
+  .badge-blue { background:#17a2b8; color:#fff; padding:3px 12px; border-radius:12px; font-size:10px; font-weight:600; display:inline-block; }
+  .badge-gray { background:#6c757d; color:#fff; padding:3px 12px; border-radius:12px; font-size:10px; font-weight:600; display:inline-block; }
+  .badge-purple { background:#6f42c1; color:#fff; padding:2px 8px; border-radius:8px; font-size:10px; display:inline-block; }
+  .btn { border:none; border-radius:4px; padding:5px 12px; font-size:11px; cursor:pointer; font-weight:500; text-decoration:none; display:inline-block; }
+  .btn-grant { background:#28a745; color:#fff; }
+  .btn-revoke { background:#dc3545; color:#fff; }
+  .btn-enable { background:#17a2b8; color:#fff; }
+  .btn-disable { background:#6c757d; color:#fff; }
+  .inline-form { display:inline; }
+  .back-link { margin-bottom:16px; }
+  .back-link a { color:#e74847; text-decoration:none; font-size:13px; }
+  .status-label { font-size:11px; color:#6c757d; margin-top:2px; }
+  .msg-list { margin-bottom:20px; }
+  .msg-item { padding:10px 16px; border-radius:6px; margin-bottom:8px; font-size:13px; }
+  .msg-success { background:#d4edda; color:#155724; }
+  .msg-warning { background:#fff3cd; color:#856404; }
+  .msg-error { background:#f8d7da; color:#721c24; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'custom_admin:index' %}">{% trans 'Home' %}</a>
+  &rsaquo; <a href="{% url 'custom_admin:index' %}#medicine-section">Medicine</a>
+  &rsaquo; Partner Access &amp; Subscriptions
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <div class="back-link"><a href="{% url 'custom_admin:index' %}">&larr; Back to Dashboard</a></div>
+  <h1>Partner Medicine Access &amp; Subscription Management</h1>
+
+  <div class="stats">
+    <div class="stat-box">
+      <div class="num">{{ partners|length }}</div>
+      <div class="lbl">Medicine Shops</div>
+    </div>
+    <div class="stat-box">
+      <div class="num" style="color:#28a745;">{{ partners_authorized }}</div>
+      <div class="lbl">Catalog Access Granted</div>
+    </div>
+    <div class="stat-box">
+      <div class="num" style="color:#17a2b8;">{{ partners_pos_enabled }}</div>
+      <div class="lbl">Medicine POS Enabled</div>
+    </div>
+    <div class="stat-box" style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">
+      <a href="{% url 'custom_admin:medicine-pending-requests' %}" class="btn btn-grant" style="padding:8px 16px;font-size:12px;"><i class="fa fa-clock-o"></i> Pending Requests</a>
+      <a href="{% url 'custom_admin:store_medicinesubscription_changelist' %}" class="btn btn-enable" style="padding:8px 16px;font-size:12px;"><i class="fa fa-list"></i> All Subscriptions</a>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="msg-list">
+    {% for msg in messages %}
+    <div class="msg-item msg-{{ msg.tags }}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if partners %}
+  <table class="wide">
+    <thead>
+      <tr>
+        <th>Partner</th>
+        <th>Phone</th>
+        <th>Access</th>
+        <th>Subscription</th>
+        <th>Medicine POS</th>
+        <th style="min-width:180px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in partners %}
+      <tr>
+        <td>
+          <a href="{% url 'custom_admin:store_partner_change' p.id %}" style="font-weight:600;">{{ p.name }}</a>
+          <br><small style="color:#6c757d;">{{ p.user.username|default:'No user' }}</small>
+        </td>
+        <td>{{ p.phone|default:'—' }}</td>
+        <td>
+          {% if p.has_medicine_access %}
+            <span class="badge-green">✓ Granted</span>
+          {% else %}
+            <span class="badge-red">✗ Denied</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if p.medicine_pos_enabled %}
+            {% with sub=p.medicine_subscription %}
+              {% if sub %}
+                {% if sub.status == 'trial' %}
+                  <span class="badge-blue">Trial</span>
+                  <div class="status-label">until {{ sub.trial_ends_at|date:"d M Y"|default:'—' }}</div>
+                {% elif sub.status == 'active' %}
+                  <span class="badge-green">Active</span>
+                  <div class="status-label">due {{ sub.next_payment_due|date:"d M Y"|default:'—' }}</div>
+                {% elif sub.status == 'expired' %}
+                  <span class="badge-red">Expired</span>
+                {% else %}
+                  <span class="badge-gray">{{ sub.get_status_display }}</span>
+                {% endif %}
+              {% else %}
+                <span class="badge-gray">Inactive</span>
+              {% endif %}
+            {% endwith %}
+          {% else %}
+            <span class="badge-gray">Disabled</span>
+          {% endif %}
+        </td>
+        <td>{% if p.medicine_pos_enabled %}<span class="badge-green">ON</span>{% else %}<span class="badge-red">OFF</span>{% endif %}</td>
+        <td>
+          <!-- Catalog Access -->
+          {% if p.has_medicine_access %}
+            <form class="inline-form" method="post" onsubmit="return confirm('Revoke medicine catalog access for {{ p.name }}?');">
+              {% csrf_token %}
+              <input type="hidden" name="partner_id" value="{{ p.id }}">
+              <input type="hidden" name="action" value="revoke">
+              <button class="btn btn-revoke" type="submit"><i class="fa fa-lock"></i> Revoke Access</button>
+            </form>
+          {% else %}
+            <form class="inline-form" method="post">
+              {% csrf_token %}
+              <input type="hidden" name="partner_id" value="{{ p.id }}">
+              <input type="hidden" name="action" value="grant">
+              <button class="btn btn-grant" type="submit"><i class="fa fa-unlock"></i> Grant Access</button>
+            </form>
+          {% endif %}
+
+          <!-- Medicine POS -->
+          {% if p.medicine_pos_enabled %}
+            <form class="inline-form" method="post" onsubmit="return confirm('Disable Medicine POS for {{ p.name }}? This will cancel their subscription.');">
+              {% csrf_token %}
+              <input type="hidden" name="partner_id" value="{{ p.id }}">
+              <input type="hidden" name="action" value="disable_pos">
+              <button class="btn btn-disable" type="submit"><i class="fa fa-power-off"></i> Disable POS</button>
+            </form>
+          {% else %}
+            <form class="inline-form" method="post">
+              {% csrf_token %}
+              <input type="hidden" name="partner_id" value="{{ p.id }}">
+              <input type="hidden" name="action" value="enable_pos">
+              <button class="btn btn-enable" type="submit"><i class="fa fa-play"></i> Enable POS (60d trial)</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="background:#fff;border:1px solid #dee2e6;border-radius:8px;padding:40px;text-align:center;color:#6c757d;">
+    <i class="fa fa-medkit" style="font-size:40px;opacity:0.3;margin-bottom:10px;display:block;"></i>
+    <p style="font-size:15px;">No medicine shops found.</p>
+    <p>Partners must set <strong>shop_style</strong> to "Medicine Shop" in their profile to appear here.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

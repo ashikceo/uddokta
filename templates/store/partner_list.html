@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Partners - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <span>All Partners</span>
+    </div>
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h1 style="margin:0;">All Partner Lists</h1>
+        <form method="GET" style="display:flex; gap:6px;">
+            <input type="text" name="q" placeholder="Search by address..." value="{{ q }}" style="padding:6px 12px; border:1px solid #ddd; border-radius:4px; font-size:13px;">
+            <button type="submit" style="padding:6px 14px; background:#e74847; color:#fff; border:none; border-radius:4px; cursor:pointer;"><i class="fa fa-search"></i></button>
+            {% if q %}<a href="{% url 'partner_list' %}" style="padding:6px 12px; border:1px solid #ddd; border-radius:4px; color:#888; text-decoration:none; font-size:13px;">Clear</a>{% endif %}
+        </form>
+    </div>
+    <div class="partner-grid">
+        {% for partner in partners %}
+        <a href="{% url 'partner_detail' partner.slug %}" class="partner-card">
+            {% if partner.profile_image %}
+            <img src="{{ partner.profile_image.url }}" alt="{{ partner.name }}">
+            {% else %}
+            <img src="/static/img/placeholder_100x100.png" alt="{{ partner.name }}">
+            {% endif %}
+            <h4>{{ partner.name }}</h4>
+            <p>{{ partner.description|truncatewords:10 }}</p>
+            {% if partner.formatted_address %}
+            <p style="font-size:12px; color:#888;"><i class="fa fa-map-marker"></i> {{ partner.formatted_address|truncatewords:15 }}</p>
+            {% endif %}
+        </a>
+        {% empty %}
+        <p>No partners found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

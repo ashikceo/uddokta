@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ partner.name }} - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'partner_list' %}">Partners</a> / <span>{{ partner.name }}</span>
+    </div>
+    <div style="text-align:center; margin-bottom:30px;">
+        {% if partner.profile_image %}
+        <img src="{{ partner.profile_image.url }}" alt="{{ partner.name }}" style="width:120px; height:120px; border-radius:50%; object-fit:cover;">
+        {% else %}
+        <img src="/static/img/placeholder_120x120.png" alt="{{ partner.name }}" style="border-radius:50%;">
+        {% endif %}
+        <h2>{{ partner.name }}</h2>
+        <p>{{ partner.description }}</p>
+        {% if partner.phone %}<p><i class="fa fa-phone"></i> {{ partner.phone }}</p>{% endif %}
+    </div>
+    <h3 class="section-title">Products by {{ partner.name }}</h3>
+    <div class="product-grid">
+        {% for product in products %}
+        <div class="product-card">
+            {% if product.label %}
+            <span class="badge {{ product.label }}">{{ product.get_label_display }}</span>
+            {% endif %}
+            <div class="product-image">
+                <a href="{% url 'product_detail' product.slug %}">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                    {% else %}
+                    <img src="/static/img/placeholder_200x180.png" alt="{{ product.name }}">
+                    {% endif %}
+                </a>
+            </div>
+            <div class="product-name">
+                <a href="{% url 'product_detail' product.slug %}">{{ product.name|truncatechars:40 }}</a>
+            </div>
+            <div>
+                <span class="price">৳ {{ product.price }}</span>
+                {% if product.old_price %}
+                <span class="old-price">৳{{ product.old_price }}</span>
+                {% endif %}
+            </div>
+            <form action="{% url 'add_to_cart' product.id %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="add-to-cart" style="border:none; cursor:pointer;">Add to Cart</button>
+            </form>
+        </div>
+        {% empty %}
+        <p>No products from this partner yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

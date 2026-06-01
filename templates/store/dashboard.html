@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <span>Dashboard</span>
+    </div>
+    <div class="page-header"><h1>Dashboard</h1></div>
+
+    {% if partner %}
+    <p style="color:#666; margin-bottom:25px;">Welcome to your seller dashboard, <strong>{{ partner.name }}</strong>.</p>
+    <div style="display:flex; align-items:center; gap:20px; margin-bottom:25px; padding:15px 20px; border:1px solid #eee; border-radius:8px;">
+        {% if partner.profile_image %}
+        <img src="{{ partner.profile_image.url }}" alt="{{ partner.name }}" style="width:60px; height:60px; border-radius:50%; object-fit:cover;">
+        {% else %}
+        <img src="/static/img/placeholder_60x60.png" alt="{{ partner.name }}" style="width:60px; height:60px; border-radius:50%; object-fit:cover;">
+        {% endif %}
+        <div style="flex:1;">
+            <strong style="font-size:16px;">{{ partner.name }}</strong>
+            {% if partner.phone %}<p style="color:#888; font-size:12px; margin:2px 0;">{{ partner.phone }}</p>{% endif %}
+        </div>
+        <a href="{% url 'dashboard_profile_edit' %}" class="btn btn-outline" style="font-size:11px; padding:6px 16px;"><i class="fa fa-edit"></i> Edit Profile</a>
+    </div>
+
+    {% if total_revenue is not None %}
+    <h3 style="margin-bottom:15px; color:#333;">Profit Overview</h3>
+    <div class="row" style="margin-bottom:25px;">
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:20px; text-align:center; background:#f8f9fa;">
+                <p style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin:0 0 5px;">Revenue</p>
+                <h2 style="font-size:28px; color:#28a745; margin:0;">৳{{ total_revenue|floatformat:0 }}</h2>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:20px; text-align:center; background:#f8f9fa;">
+                <p style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin:0 0 5px;">Cost</p>
+                <h2 style="font-size:28px; color:#dc3545; margin:0;">৳{{ total_cost|floatformat:0 }}</h2>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:20px; text-align:center; background:#f8f9fa;">
+                <p style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin:0 0 5px;">Gross Profit</p>
+                <h2 style="font-size:28px; color:#e74847; margin:0;">৳{{ gross_profit|floatformat:0 }}</h2>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:20px; text-align:center; background:#f8f9fa;">
+                <p style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin:0 0 5px;">Commission ({{ commission_rate }}%)</p>
+                <h2 style="font-size:28px; color:#ffc107; margin:0;">৳{{ commission|default:'0'|floatformat:0 }}</h2>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:20px; text-align:center; background:#f8f9fa;">
+                <p style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin:0 0 5px;">Net Profit</p>
+                <h2 style="font-size:28px; color:#e74847; margin:0;">৳{{ net_profit|floatformat:0 }}</h2>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:20px; text-align:center; background:#f8f9fa;">
+                <p style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin:0 0 5px;">Profit Margin</p>
+                <h2 style="font-size:28px; color:#e74847; margin:0;">{{ profit_margin }}%</h2>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if low_stock_products %}
+    <div style="margin-bottom:25px; border:1px solid #ffc107; border-radius:8px; background:#fffbe6; padding:15px 20px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+            <i class="fa fa-exclamation-triangle" style="color:#e67e22; font-size:18px;"></i>
+            <strong style="color:#e67e22;">Low Stock Alerts ({{ low_stock_products|length }})</strong>
+            <a href="{% url 'dashboard_products' %}" style="margin-left:auto; font-size:12px; color:#e74847;">Manage Products →</a>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            {% for p in low_stock_products|slice:":10" %}
+            <a href="{% url 'dashboard_product_edit' p.id %}" style="display:flex; align-items:center; gap:6px; padding:6px 12px; background:#fff; border:1px solid #ffe0a0; border-radius:6px; text-decoration:none; font-size:12px; color:#333;">
+                <span style="font-weight:600; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ p.name }}</span>
+                <span style="background:#dc3545; color:#fff; padding:1px 8px; border-radius:8px; font-size:11px;">{{ p.stock }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row" style="margin-bottom:30px;">
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <h2 style="font-size:36px; color:#e74847;">{{ products_count }}</h2>
+                <p>Products</p>
+                <a href="{% url 'dashboard_products' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">Manage Products</a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <h2 style="font-size:36px; color:#e74847;">{{ orders_count }}</h2>
+                <p>Orders</p>
+                <a href="{% url 'dashboard_orders' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">View Orders</a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center; position:relative;">
+                <h2 style="font-size:36px; color:#e74847;">{{ custom_orders_pending|default:'0' }}</h2>
+                <p>Custom Orders</p>
+                <a href="{% url 'dashboard_custom_orders' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">Place Custom Order</a>
+                {% if custom_orders_pending %}
+                <span style="position:absolute; top:-5px; right:-5px; background:#dc3545; color:#fff; border-radius:50%; width:22px; height:22px; font-size:11px; line-height:22px; text-align:center; font-weight:700;">{{ custom_orders_pending }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <h2 style="font-size:36px; color:#e74847;">New</h2>
+                <p>Add Product</p>
+                <a href="{% url 'dashboard_product_create' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">Add New</a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-store" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Store Front</p>
+                <a href="{% url 'partner_detail' partner.slug %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;" target="_blank">View Store</a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa {% if partner.show_products %}fa-eye{% else %}fa-eye-slash{% endif %}" style="font-size:36px; color:{% if partner.show_products %}#28a745{% else %}#dc3545{% endif %}; margin-bottom:5px;"></i>
+                <p>Store Visibility</p>
+                <div style="font-size:13px; font-weight:600; margin-bottom:8px; color:{% if partner.show_products %}#28a745{% else %}#dc3545{% endif %};">
+                    {% if partner.show_products %}ON — Showing on Website{% else %}OFF — Hidden from Website{% endif %}
+                </div>
+                <a href="{% url 'dashboard_toggle_products' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">
+                    {% if partner.show_products %}Turn Off{% else %}Turn On{% endif %}
+                </a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa {% if partner.show_all_products_section %}fa-th-large{% else %}fa-th-large{% endif %}" style="font-size:36px; color:{% if partner.show_all_products_section %}#28a745{% else %}#dc3545{% endif %}; margin-bottom:5px;"></i>
+                <p>All Products Section</p>
+                <div style="font-size:13px; font-weight:600; margin-bottom:8px; color:{% if partner.show_all_products_section %}#28a745{% else %}#dc3545{% endif %};">
+                    {% if partner.show_all_products_section %}ON — Visible on Store{% else %}OFF — Hidden from Store{% endif %}
+                </div>
+                <a href="{% url 'dashboard_toggle_all_products_section' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">
+                    {% if partner.show_all_products_section %}Turn Off{% else %}Turn On{% endif %}
+                </a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa {% if partner.show_random_products_section %}fa-random{% else %}fa-random{% endif %}" style="font-size:36px; color:{% if partner.show_random_products_section %}#28a745{% else %}#dc3545{% endif %}; margin-bottom:5px;"></i>
+                <p>Random Products Section</p>
+                <div style="font-size:13px; font-weight:600; margin-bottom:8px; color:{% if partner.show_random_products_section %}#28a745{% else %}#dc3545{% endif %};">
+                    {% if partner.show_random_products_section %}ON — Visible on Store{% else %}OFF — Hidden from Store{% endif %}
+                </div>
+                <a href="{% url 'dashboard_toggle_random_products_section' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">
+                    {% if partner.show_random_products_section %}Turn Off{% else %}Turn On{% endif %}
+                </a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa {% if partner.show_slider %}fa-sliders{% else %}fa-sliders{% endif %}" style="font-size:36px; color:{% if partner.show_slider %}#28a745{% else %}#dc3545{% endif %}; margin-bottom:5px;"></i>
+                <p>Slider</p>
+                <div style="font-size:13px; font-weight:600; margin-bottom:8px; color:{% if partner.show_slider %}#28a745{% else %}#dc3545{% endif %};">
+                    {% if partner.show_slider %}ON — Visible{% else %}OFF — Hidden{% endif %}
+                </div>
+                <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+                    <a href="{% url 'dashboard_toggle_slider' %}" class="btn btn-outline" style="margin-top:5px; font-size:11px;">
+                        {% if partner.show_slider %}Turn Off{% else %}Turn On{% endif %}
+                    </a>
+                    <a href="{% url 'dashboard_slider_list' %}" class="btn btn-outline" style="margin-top:5px; font-size:11px;">Manage</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-credit-card" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>POS</p>
+                <div style="font-size:12px; color:#888; margin-bottom:8px;">In-store sales (no commission)</div>
+                <div style="display:flex; gap:8px; justify-content:center;">
+                    <a href="{% url 'pos_dashboard' %}" class="btn btn-primary" style="font-size:11px; padding:6px 14px;">Open POS</a>
+                    <a href="{% url 'pos_order_list' %}" class="btn btn-outline" style="font-size:11px; padding:6px 14px;">Orders</a>
+                </div>
+            </div>
+        </div>
+        {% if partner.shop_style == 'medicine' and partner.has_medicine_access %}
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-medkit" style="font-size:36px; color:#6f42c1; margin-bottom:5px;"></i>
+                <p>Medicine POS</p>
+                <div style="font-size:12px; color:#888; margin-bottom:8px;">
+                    {% if partner.medicine_pos_enabled %}
+                    <span style="color:#28a745;">{{ partner.medicine_subscription.get_status_display|default:'Active' }}</span>
+                    {% else %}
+                    <span style="color:#dc3545;">Not enabled</span>
+                    {% endif %}
+                </div>
+                <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+                    <a href="{% url 'medicine_pos_dashboard' %}" class="btn btn-primary" style="font-size:11px; padding:6px 14px; background:#6f42c1; border-color:#6f42c1;">Open POS</a>
+                    <a href="{% url 'medicine_pos_order_list' %}" class="btn btn-outline" style="font-size:11px; padding:6px 14px;">Orders</a>
+                    <a href="{% url 'medicine_request_product' %}" class="btn btn-outline" style="font-size:11px; padding:6px 14px;">Request Product</a>
+                    <a href="{% url 'medicine_subscription_page' %}" class="btn btn-outline" style="font-size:11px; padding:6px 14px;">Subscription</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-star" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Reviews</p>
+                <a href="{% url 'dashboard_reviews' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">Manage Reviews</a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-bars" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Menu</p>
+                <a href="{% url 'dashboard_menu_list' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">Manage Menu</a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-picture-o" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Side Banners</p>
+                <a href="{% url 'dashboard_side_banners' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">Manage Banners</a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <h2 style="font-size:36px; color:#e74847;">৳{{ wallet.balance|floatformat:0 }}</h2>
+                <p>Wallet</p>
+                    <a href="{% url 'dashboard_wallet' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">My Wallet</a>
+                    {% if partner.shop_style == 'medicine' and partner.has_medicine_access %}
+                    <a href="{% url 'wallet_recharge' %}" class="btn btn-primary" style="margin-top:5px; font-size:11px; padding:6px 14px; background:#6f42c1; border-color:#6f42c1;">Recharge</a>
+                    {% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-bar-chart" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Analytics</p>
+                <a href="{% url 'dashboard_analytics' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">View Analytics</a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center; position:relative;">
+                <i class="fa fa-ticket" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Support Tickets</p>
+                <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+                    <a href="{% url 'dashboard_tickets' %}" class="btn btn-outline" style="margin-top:5px; font-size:11px;">View Tickets</a>
+                    <a href="{% url 'dashboard_ticket_create' %}" class="btn btn-primary" style="margin-top:5px; font-size:11px; padding:6px 14px;">Create Ticket</a>
+                </div>
+                {% if open_tickets %}
+                <span style="position:absolute;top:-5px;right:-5px;background:#dc3545;color:#fff;border-radius:50%;width:22px;height:22px;font-size:11px;line-height:22px;text-align:center;font-weight:700;">{{ open_tickets }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-envelope" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Messages</p>
+                <a href="{% url 'partner_message_list' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">View Messages</a>
+                {% if unread_messages %}<span style="position:absolute;top:-5px;right:-5px;background:#dc3545;color:#fff;border-radius:50%;width:22px;height:22px;font-size:11px;line-height:22px;text-align:center;font-weight:700;">{{ unread_messages }}</span>{% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-question-circle" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Product Q&amp;A</p>
+                <a href="{% url 'partner_qa_list' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">Manage Q&A</a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-bell" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Notifications</p>
+                <a href="{% url 'dashboard_notifications' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">View</a>
+                {% if unread_notifications %}<span style="position:absolute;top:-5px;right:-5px;background:#dc3545;color:#fff;border-radius:50%;width:22px;height:22px;font-size:11px;line-height:22px;text-align:center;font-weight:700;">{{ unread_notifications }}</span>{% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-upload" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Bulk Upload</p>
+                <a href="{% url 'dashboard_product_bulk_upload' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">Import Products</a>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-undo" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Refunds</p>
+                <a href="{% url 'dashboard_refunds' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">View Refunds</a>
+            </div>
+        </div>
+        {% if partner.is_dealer or partner.is_union_agent %}
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-users" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Sellers</p>
+                <a href="{% url 'dashboard_sellers' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">Manage Sellers</a>
+            </div>
+        </div>
+        {% endif %}
+        {% if partner.is_dealer %}
+        <div class="col-3">
+            <div style="border:1px solid #eee; padding:25px; text-align:center;">
+                <i class="fa fa-handshake-o" style="font-size:36px; color:#e74847; margin-bottom:5px;"></i>
+                <p>Union Agents</p>
+                <a href="{% url 'dashboard_union_agents' %}" class="btn btn-outline" style="margin-top:10px; font-size:11px;">Manage Union Agents</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <p style="color:#666; margin-bottom:25px;">Welcome, <strong>{{ user.username }}</strong>.</p>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3 style="margin:0;">My Orders</h3>
+        <div>
+            <a href="{% url 'customer_orders' %}" class="btn btn-outline" style="font-size:12px; padding:4px 14px;"><i class="fa fa-truck"></i> Track Orders</a>
+            <a href="{% url 'customer_orders' %}" class="btn btn-outline" style="font-size:12px; padding:4px 14px;">View All</a>
+        </div>
+    </div>
+    {% if orders %}
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>Order #</th>
+                <th>Date</th>
+                <th>Products</th>
+                <th>Total</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>Delivery</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.id }}</td>
+                <td>{{ order.created|date:"d M Y" }}</td>
+                <td>
+                    {% for item in order.items.all %}
+                    <div style="margin-bottom:2px;">
+                        {% if item.product %}
+                        <a href="{% url 'product_detail' item.product.slug %}" style="color:#e74847;">{{ item.product_name|truncatechars:30 }}</a>
+                        {% else %}
+                        <span style="color:#999;">{{ item.product_name|truncatechars:30 }}</span>
+                        {% endif %}{% if item.color_name %} <span style="color:#888;font-size:10px;">({{ item.color_name }})</span>{% endif %}{% if item.size_name %} <span style="color:#888;font-size:10px;">[{{ item.size_name }}]</span>{% endif %}
+                        <span style="color:#888; font-size:11px;">× {{ item.quantity }}</span>
+                    </div>
+                    {% endfor %}
+                </td>
+                <td>৳ {{ order.total }}</td>
+                <td>{{ order.payment_method }}</td>
+                <td>
+                    <span style="{% if order.status == 'cancelled' %}color:#e74847;{% elif order.status == 'completed' %}color:#28a745;{% else %}color:#ffc107;{% endif %} font-weight:600;">
+                        {{ order.get_status_display }}
+                    </span>
+                </td>
+                <td>
+                    {% if order.delivery_status %}
+                    <span style="color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;background:
+                    {% if order.delivery_status == 'pending' %}#ffc107
+                    {% elif order.delivery_status == 'picked_up' %}#17a2b8
+                    {% elif order.delivery_status == 'in_transit' %}#2196F3
+                    {% elif order.delivery_status == 'out_for_delivery' %}#FF9800
+                    {% elif order.delivery_status == 'delivered' %}#28a745
+                    {% elif order.delivery_status == 'failed' %}#dc3545
+                    {% else %}#6c757d{% endif %};">{{ order.get_delivery_status_display }}</span>
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    {% if order.status == 'pending' %}
+                    <form method="POST" action="{% url 'cancel_order' order.id %}" onsubmit="return confirm('Cancel this order?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary" style="padding:4px 12px; font-size:11px; background:#e74847; border-color:#e74847;">Cancel</button>
+                    </form>
+                    {% else %}
+                    <span style="color:#999; font-size:11px;">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center; padding:40px 0; border:1px solid #eee; margin-bottom:30px;">
+        <i class="fa fa-shopping-bag" style="font-size:36px; color:#ddd; margin-bottom:10px;"></i>
+        <p style="color:#888;">You haven't placed any orders yet.</p>
+        <a href="{% url 'shop_grid' %}" class="btn btn-primary" style="margin-top:10px;">Start Shopping</a>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:30px; display:flex; gap:15px; flex-wrap:wrap;">
+        <a href="{% url 'customer_orders' %}" class="btn btn-outline"><i class="fa fa-truck"></i> My Orders</a>
+        <a href="{% url 'dashboard_addresses' %}" class="btn btn-outline"><i class="fa fa-map-marker"></i> My Addresses</a>
+        <a href="{% url 'customer_message_list' %}" class="btn btn-outline"><i class="fa fa-envelope"></i> Messages{% if unread_messages %} ({{ unread_messages }}){% endif %}</a>
+        <a href="{% url 'change_password' %}" class="btn btn-outline"><i class="fa fa-key"></i> Change Password</a>
+        <a href="{% url 'dashboard_become_seller' %}" class="btn btn-primary"><i class="fa fa-store"></i> Create a Seller Account</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

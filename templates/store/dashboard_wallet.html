@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Wallet - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'dashboard' %}">Dashboard</a> / <span>My Wallet</span>
+    </div>
+
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <h1>My Wallet</h1>
+        <div>
+            <a href="{% url 'dashboard_wallet_transactions' %}" class="btn btn-outline" style="font-size:12px;">All Transactions</a>
+            <a href="{% url 'dashboard_withdraw' %}" class="btn btn-primary" style="font-size:12px;{% if wallet.is_frozen %}opacity:0.5;pointer-events:none;{% endif %}">Withdraw Funds</a>
+        </div>
+    </div>
+
+    {% if wallet.is_frozen %}
+    <div class="alert alert-error" style="background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:12px 16px;border-radius:4px;margin-bottom:20px;">
+        <strong>Wallet Frozen:</strong> Your wallet is currently frozen. You cannot make withdrawals. Please contact support.
+    </div>
+    {% endif %}
+
+    <div class="row" style="margin-bottom:30px;">
+        <div class="col-3">
+            <div style="border:1px solid #eee;padding:25px;text-align:center;background:linear-gradient(135deg,#e74847,#d63031);color:#fff;border-radius:8px;">
+                <p style="font-size:12px;text-transform:uppercase;letter-spacing:1px;opacity:0.9;margin:0 0 8px;">Available Balance</p>
+                <h2 style="font-size:40px;margin:0;color:#fff;">৳{{ wallet.available_balance|floatformat:0 }}</h2>
+                {% if wallet.locked_balance > 0 %}
+                <p style="margin:5px 0 0;font-size:11px;opacity:0.8;">(৳{{ wallet.locked_balance|floatformat:0 }} locked as bonus)</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee;padding:25px;text-align:center;border-radius:8px;">
+                <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 5px;">Total Balance</p>
+                <h2 style="font-size:28px;color:#333;margin:0;">৳{{ wallet.balance|floatformat:0 }}</h2>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee;padding:25px;text-align:center;border-radius:8px;">
+                <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 5px;">Total Earned</p>
+                <h2 style="font-size:28px;color:#28a745;margin:0;">৳{{ wallet.total_earned|floatformat:0 }}</h2>
+            </div>
+        </div>
+        <div class="col-3">
+            <div style="border:1px solid #eee;padding:25px;text-align:center;border-radius:8px;">
+                <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 5px;">Pending Withdrawals</p>
+                <h2 style="font-size:28px;color:#ffc107;margin:0;">{{ pending_withdrawals }}</h2>
+            </div>
+        </div>
+    </div>
+
+    {% if wallet.locked_balance > 0 %}
+    <div style="background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:12px 16px;border-radius:4px;margin-bottom:20px;">
+        <strong><i class="fa fa-lock"></i> Bonus Money Locked:</strong> ৳{{ wallet.locked_balance|floatformat:0 }} of your balance is a signup bonus and cannot be withdrawn yet.
+        It will automatically unlock once the admin commission from your sales reaches ৳1,000.
+        <a href="{% url 'dashboard_wallet_transactions' %}?type=bonus_release" style="color:#856404;text-decoration:underline;">Check release status</a>
+    </div>
+    {% endif %}
+
+    <div style="display:flex;gap:15px;margin-bottom:25px;flex-wrap:wrap;">
+        <a href="{% url 'dashboard_withdraw' %}" class="btn btn-primary" style="{% if wallet.is_frozen or wallet.available_balance <= 0 %}opacity:0.5;pointer-events:none;{% endif %}"><i class="fa fa-arrow-up"></i> Withdraw Money</a>
+        <a href="{% url 'dashboard_withdrawal_list' %}" class="btn btn-outline"><i class="fa fa-list"></i> Withdrawal History</a>
+        <a href="{% url 'dashboard_payout_methods' %}" class="btn btn-outline"><i class="fa fa-bank"></i> Payout Methods</a>
+        <a href="{% url 'dashboard_wallet_transactions' %}" class="btn btn-outline"><i class="fa fa-exchange"></i> All Transactions</a>
+    </div>
+
+    <h3 style="margin-bottom:15px;">Recent Transactions</h3>
+    {% if transactions %}
+    <div style="overflow-x:auto;">
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>Reference</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Balance</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for txn in transactions %}
+            <tr>
+                <td style="font-size:11px;color:#888;">{{ txn.reference_id }}</td>
+                <td>
+                    <span style="background:{% if txn.type == 'order_credit' %}#28a745{% elif txn.type == 'withdrawal' %}#dc3545{% elif txn.type == 'manual_credit' %}#17a2b8{% elif txn.type == 'manual_debit' %}#dc3545{% elif txn.type == 'withdrawal_fee' %}#ffc107{% elif txn.type == 'signup_bonus' %}#6f42c1{% elif txn.type == 'bonus_release' %}#28a745{% else %}#6c757d{% endif %};color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;white-space:nowrap;">
+                        {{ txn.get_type_display }}
+                    </span>
+                </td>
+                <td style="font-size:12px;">{{ txn.description|truncatechars:50 }}</td>
+                <td style="color:{% if txn.amount >= 0 %}#28a745{% else %}#dc3545{% endif %};font-weight:600;">
+                    {% if txn.amount >= 0 %}+{% endif %}৳{{ txn.amount|floatformat:0 }}
+                </td>
+                <td>৳{{ txn.balance_after|floatformat:0 }}</td>
+                <td style="font-size:11px;color:#888;">{{ txn.created|date:"d M Y H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:60px 0;border:1px solid #eee;border-radius:8px;">
+        <i class="fa fa-credit-card" style="font-size:48px;color:#ddd;margin-bottom:15px;"></i>
+        <h3>No transactions yet</h3>
+        <p style="color:#666;">Your wallet transactions will appear here once orders are completed.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

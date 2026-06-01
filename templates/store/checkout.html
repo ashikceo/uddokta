@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <a href="{% url 'cart' %}">Cart</a> / <span>Checkout</span>
+    </div>
+    <div class="page-header"><h1>Checkout</h1></div>
+    <div class="row">
+        <div class="col-8">
+            <div style="border:1px solid #eee; padding:20px; border-radius:6px;">
+            <form method="POST" id="checkoutForm">
+                {% csrf_token %}
+                <h3 style="margin-bottom:15px;">Delivery Details</h3>
+                {% if errors %}
+                <div class="alert alert-error">
+                    {% for field, msg in errors.items %}
+                    <p>{{ msg }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" name="name" class="form-control" value="{{ name|default:'' }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="text" name="phone" class="form-control" value="{{ phone|default:'' }}" required>
+                </div>
+
+                <!-- Delivery Option -->
+                <div class="form-group">
+                    <label>Delivery Option *</label>
+                    <div style="display:flex; gap:20px; margin-top:5px;">
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="delivery_option" value="manual" {% if delivery_option == 'manual' %}checked{% endif %} onchange="toggleDeliveryOption()">
+                            <strong>My Address</strong>
+                        </label>
+                        {% if partner_delivery_enabled %}
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="delivery_option" value="partner" {% if delivery_option == 'partner' %}checked{% endif %} onchange="toggleDeliveryOption()">
+                            <strong>Partner / Dealer Address</strong>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if saved_addresses %}
+                <div style="margin-bottom:15px; padding:12px; background:#f0f4ff; border:1px solid #c6d6ff; border-radius:6px;">
+                    <label style="font-weight:600; font-size:13px;">Saved Addresses</label>
+                    <select class="form-control" id="savedAddressSelect" onchange="fillSavedAddress()" style="margin-top:6px;">
+                        <option value="">-- Select a saved address --</option>
+                        {% for a in saved_addresses %}
+                        <option value="{{ a.id }}"
+                            data-name="{{ a.name|default:'' }}"
+                            data-phone="{{ a.phone|default:'' }}"
+                            data-street="{{ a.street_address|default:'' }}"
+                            data-area="{{ a.area|default:'' }}"
+                            data-district="{{ a.district|default:'' }}"
+                            data-division="{{ a.division|default:'' }}"
+                            {% if a.is_default %}data-default="1"{% endif %}>
+                            {% if a.label %}[{{ a.label }}] {% endif %}{{ a.street_address|truncatechars:40 }}{% if a.district %}, {{ a.district }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div style="margin-top:6px; font-size:12px;"><a href="{% url 'dashboard_addresses' %}" target="_blank">Manage addresses</a></div>
+                </div>
+                {% endif %}
+
+                <!-- Manual Address -->
+                <div id="manualAddressSection" {% if delivery_option == 'partner' %}style="display:none;"{% endif %}>
+                    <div class="form-group">
+                        <label>Street Address <span class="required">*</span></label>
+                        <input type="text" id="manualStreet" class="form-control" placeholder="House / Flat / Road">
+                    </div>
+                    <div class="form-group">
+                        <label for="districtSelect">District / State <span class="required">*</span></label>
+                        <select id="districtSelect" class="form-control" onchange="loadCities()">
+                            <option value="" selected disabled>-- Select District --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="citySelect">City / Thana / Area <span class="required">*</span></label>
+                        <select id="citySelect" class="form-control" disabled>
+                            <option value="" selected disabled>-- Select District First --</option>
+                        </select>
+                    </div>
+                    <div id="addressPreview" style="background:#f0fff4; border:1px solid #c6f6d5; padding:10px; border-radius:6px; margin-top:10px; font-size:13px; display:none;">
+                        <strong>Address:</strong> <span id="addressPreviewText"></span>
+                    </div>
+                    <textarea name="address" id="manualAddressHidden" style="display:none;">{{ address|default:'' }}</textarea>
+                </div>
+
+                {% if partner_delivery_enabled %}
+                <!-- Partner Address Selection -->
+                <div id="partnerAddressSection" {% if delivery_option != 'partner' %}style="display:none;"{% endif %}>
+                    <div class="form-group">
+                        <label>Select Partner / Dealer *</label>
+                        <select name="delivery_partner" class="form-control" id="partnerSelect" onchange="fillPartnerAddress()" {% if delivery_option == 'partner' %}required{% endif %}>
+                            <option value="">-- Select --</option>
+                            {% for p in partners %}
+                            <option value="{{ p.id }}"
+                                data-street="{{ p.address_street|default:'' }}"
+                                data-upazila="{{ p.address_upazila|default:'' }}"
+                                data-district="{{ p.address_district|default:'' }}"
+                                data-division="{{ p.address_division|default:'' }}"
+                                {% if selected_partner and selected_partner.id == p.id %}selected{% endif %}>
+                                {{ p.name }} - {{ p.address_district|default:'' }}{% if p.address_upazila %}, {{ p.address_upazila }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div class="form-group">
+                            <label>Street / Area</label>
+                            <input type="text" name="partner_street" class="form-control" id="partnerStreet" value="{{ partner_street|default:'' }}" placeholder="Street, house, area">
+                        </div>
+                        <div class="form-group">
+                            <label>Upazila / Thana</label>
+                            <input type="text" name="partner_upazila" class="form-control" id="partnerUpazila" value="{{ partner_upazila|default:'' }}">
+                        </div>
+                        <div class="form-group">
+                            <label>District</label>
+                            <input type="text" name="partner_district" class="form-control" id="partnerDistrict" value="{{ partner_district|default:'' }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Division</label>
+                            <input type="text" name="partner_division" class="form-control" id="partnerDivision" value="{{ partner_division|default:'' }}">
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <h3 style="margin:25px 0 15px;">Payment Method</h3>
+                <div style="border:1px solid #eee; padding:15px; margin-bottom:20px;">
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                        <input type="radio" name="payment_method" value="Cash on Delivery" checked disabled>
+                        <strong>Cash on Delivery</strong>
+                    </label>
+                    <p style="color:#888; margin:5px 0 0 25px; font-size:12px;">Pay with cash upon delivery.</p>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="padding:12px 40px; font-size:16px; width:100%;">Place Order</button>
+            </form>
+            </div>
+        </div>
+        <div class="col-4">
+            <!-- Coupon Code -->
+            <div style="border:1px solid #eee; padding:20px; margin-bottom:15px;">
+                <h4 style="margin-bottom:10px;">Have a Coupon?</h4>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="couponCode" placeholder="Enter code" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:13px;">
+                    <button type="button" id="applyCouponBtn" class="btn btn-primary" style="padding:8px 15px; font-size:13px; white-space:nowrap;">Apply</button>
+                </div>
+                <div id="couponMessage" style="margin-top:8px; font-size:12px; display:none;"></div>
+                <input type="hidden" name="coupon_applied" id="couponApplied" value="">
+            </div>
+
+            <!-- Order Summary -->
+            <div style="border:1px solid #eee; padding:20px;">
+                <h4 style="margin-bottom:15px;">Order Summary</h4>
+                {% for item in cart.items.all %}
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px;">
+                    {% if item.product.image %}
+                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width:40px; height:40px; object-fit:contain; border:1px solid #eee; border-radius:4px; flex-shrink:0;">
+                    {% endif %}
+                    <span style="flex:1;">{{ item.product.name|truncatechars:30 }}{% if item.color_variant %} <span style="color:#888;">({{ item.color_variant.color_name }})</span>{% endif %}{% if item.size_variant %} <span style="color:#888;">[{{ item.size_variant.size_name }}]</span>{% endif %} × {{ item.quantity }}</span>
+                    <span>৳{{ item.subtotal }}</span>
+                </div>
+                {% endfor %}
+                <hr style="margin:10px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:14px; margin:5px 0;">
+                    <span>Subtotal</span>
+                    <span>৳{{ subtotal|default:cart.total_amount }}</span>
+                </div>
+                <div id="discountRow" style="display:flex; justify-content:space-between; font-size:14px; margin:5px 0; {% if not discount_amount %}display:none{% endif %}">
+                    <span>Discount</span>
+                    <span id="discountAmount" style="color:#28a745;">-৳{{ discount_amount|default:'0' }}</span>
+                </div>
+                {% if applicable_fees %}
+                <div style="margin:5px 0;">
+                    {% for fee in applicable_fees %}
+                    <div style="display:flex; justify-content:space-between; font-size:13px; margin:3px 0;">
+                        <span>{% if fee.link_url %}<a href="{{ fee.link_url }}" target="_blank" style="color:#e74847;">{{ fee.name }}</a>{% else %}{{ fee.name }}{% endif %}</span>
+                        <span>৳{{ fee.value }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <hr style="margin:10px 0;">
+                <div id="grandTotalRow" style="display:flex; justify-content:space-between; font-weight:700; font-size:18px; color:#e74847;">
+                    <span>Total</span>
+                    <span id="grandTotal">৳{{ grand_total|default:cart.total_amount }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const locations = {
+    "Bagerhat": ["Bagerhat Sadar", "Chitalmari", "Fakirhat", "Kachua", "Mollahat", "Mongla", "Morrelganj", "Rampal", "Sarankhola"],
+    "Bandarban": ["Alikadam", "Bandarban Sadar", "Lama", "Naikhongchhari", "Rowangchhari", "Ruma", "Thanchi"],
+    "Barguna": ["Amtali", "Bamna", "Barguna Sadar", "Betagi", "Patharghata", "Taltali"],
+    "Barishal": ["Agailjhara", "Babuganj", "Bakerganj", "Banari Para", "Gaurnadi", "Hizla", "Barisal Sadar (Kotwali)", "Mhendiganj", "Muladi", "Wazirpur"],
+    "Bhola": ["Bhola Sadar", "Burhanuddin", "Char Fasson", "Daulat Khan", "Lalmohan", "Manpura", "Tazumuddin"],
+    "Bogura": ["Adamdighi", "Bogra Sadar", "Dhunat", "Dhupchanchia", "Gabtali", "Kahaloo", "Nandigram", "Sariakandi", "Shajahanpur", "Sherpur", "Shibganj", "Sonatola"],
+    "Brahmanbaria": ["Akhaura", "Banchharampur", "Bijoynagar", "Brahmanbaria Sadar", "Ashuganj", "Kasba", "Nabinagar", "Nasirnagar", "Sarail"],
+    "Chandpur": ["Chandpur Sadar", "Faridganj", "Haim Char", "Hajiganj", "Kachua", "Matlab Dakshin", "Matlab Uttar", "Shahrasti"],
+    "Chattogram": ["Anowara", "Bayejid Bostami", "Banshkhali", "Bakalia", "Boalkhali", "Chandanaish", "Chandgaon", "Chattogram Port", "Double Mooring", "Fatikchhari", "Halishahar", "Hathazari", "Kotwali", "Khulshi", "Lohagara", "Mirsharai", "Pahartali", "Panchlaish", "Patiya", "Patenga", "Rangunia", "Raozan", "Sandwip", "Satkania", "Sitakunda", "Agrabad "],
+    "Chuadanga": ["Alamdanga", "Chuadanga Sadar", "Damurhuda", "Jiban Nagar"],
+    "Cox's Bazar": ["Chakaria", "Cox's Bazar Sadar", "Kutubdia", "Maheshkhali", "Pekua", "Ramu", "Teknaf", "Ukhiya Upazila"],
+    "Cumilla": ["Barura", "Brahman Para", "Burichang", "Chandina", "Chauddagram", "Cumilla Sadar Dakshin", "Daudkandi", "Debidwar", "Homna", "Cumilla Adarsha Sadar", "Laksam", "Manoharganj", "Meghna", "Muradnagar", "Nangalkot", "Titas"],
+    "Dhaka": ["12 Tala", "Aam Bagan", "Abdullah Bag", "Abujar Bafari Gali", "Abul Hotel", "Addin Hospital", "Adorsho Nagor", "Aftab Nagor Block A To G", "Agora", "Alen Bari", "Arambag", "Arjot Para", "Ashalota, Bonolota", "Aurongojeb Road", "Baf Shaheen College/Jahangir Gate", "Baganbari", "Banani", "Banani 1", "Banani 11", "Banani 17", "Banani 2", "Banani 21", "Banani 23", "Banani 27", "Banani 8", "Banani Chairman Bari", "Banani Dohs", "Bangshal", "Bashtola", "Bashundhara Block  A To L", "Bata Gali", "Begun Bari ", "Bepari Gali", "Bg Press", "Bhauya Para", "Biam Auditorium", "Bibirbagicha", "Bongsal", "Dhoar", "Boro Moghbazar", "Center Point", "Chairman Gali", "Channel 24", "Christian Para", "Cid Office", "Comilla Para", "Dalibari Kachabazar", "Dhamrai", "Demra", "Dillu Road", "Diplomatic Zone", "Dit Project", "Dnc Staff Quarter", "Doctor Goli", "Dohar", "Dokkhin Para", "East Goran", "East Nakhal Para", "East Noyatola", "East Rumpura", "Eskaton", "Fasertake", "Gm Bari", "Goran", "Graveyard Road", "Green Way", "Gudara Ghat", "Old Dhaka", "Gulbag", "Gulshan", "Gulshan 1", "Gulshan 2", "Gulshan Arong", "Gulshan Avenue", "Gupi Para", "Hazari Bari", "Imam Bag", "Jagonnath Pur", "Jourshara And Lichu Bagan", "Jurain", "Kajla", "Kakoli", "Kalachad Pur And Norda", "Kazi Office R Gali", "Kemal Ataturk Avenue", "Khilbarir Take", "Khilgaon", "Khilgaon Block A", "Khilgaon Block B", "Khilgaon Block C", "Krishi Market", "Kuni Para", "Kunipara", "Kuril Bisso Road", "Kuril Chaurasta", "Kuril Ghatpar", "Lalbag", "Lalmatia", "Link Road", "Lukaser Mor", "Maasranga Television", "Mailbag 1st Line", "Malibag", "Malibag Chowdhuripara", "Malitola", "Marul Badda", "Mirbag", "Mogbazar", "Mohakhali Bus Terminal", "Mohammadia Housing Limited", "Mohammadia Housing Ltd", "Mohammadpur", "Mohanagor Project", "Moinar Bag", "Monipuripara", "Motijheel", "Mouchak", "Navy Headquarters", "Nawabganj (Dhaka)", "Nazimuddir Road", "Newmarket", "Nijhum Officers Quarters", "Niketon", "Nobin Bag", "Nobodoy Housing Ltd", "North Goran", "Notun Bag", "Nurjahan Road", "Paglamajar Gali", "Pakistan Embassy", "Panthapath", "Pc Culture Housing", "Police Plaza", "Post Office Road", "Postogola", "Prime Minister Office", "Prodan Muntri Karjaloy", "Provati Bag", "Purba Anchol Road", "Qatwali", "Radisson Water Blu Hotel", "Rajabazar", "Rampura Banassre", "Rampura Bazar", "Rampura Hazipara", "Rangs Vaban", "Razia Sultana Road", "Riaz Bag", "Roma Century ", "Rosulbag", "Sadhinata Tower", "Santibag", "Satrasta", "Satta Gali", "Savar", "Sayed Nagor", "Shadhinota Sharoni", "Shahbag", "Shahidbag", "Shankar", "Shanti Niketon", "Shatar Kul", "Shekerteak", "Sheron Bag", "Shersah Suri Road", "Shubastu Najor Velly", "Shyamoli", "Siddiq Master Dhal", "Sipahi Bag", "Sismohol", "Soilmaid", "Soinik Club", "South Badda", "South Banassre", "South Goran", "Sukrabad", "Sur Soyad Road", "T&T Colony", "T&T Gali", "Tajmahal Road", "Taltola", "Tejgaon Industrial Area", "Tejgaon Link Road", "Tejgaon Truck Stand", "Tibet", "Town Hall", "Truck Stand", "United Hospital ", "Uttorpara", "Vatara", "Vodro Gali", "Vootergoli", "West Mailbag", "West Nakhal Para", "West Panthapath", "Wreless Gate", "Zigatala", "Baridhara", "Rampura", "Banasree", "Bashabo", "Moghbazar", "Tejgaon", "Mohakhali", "Mohakhali Dohs", "Banani", "Bashundhara R/A", "Notun Bazar", "Shahjadpur", "Norda", "Nakhalpara", "Farmgate", "Azimpur", "Dhaka University", "Kalabagan", "Elephant Road", "Asad Gate", "Hazaribag", "Adabar", "Chankharpul", "Nazimuddin Road", "Kamrangirchor", "Jatrabari", "Shantinagar", "Mugdapara", "Chakbazar", "Maniknagar", "Kamalapur", "Golapbag", "Paltan", "Gopibag", "Kakrail", "Tikatuli", "Shonir Akhra", "Gendaria", "Mirpur", "Mirpur 1", "Mirpur 2", "Mirpur 6", "Mirpur 7", "Mirpur 11", "Mirpur 12", "Mirpur Dohs", "Mirpur 10", "Mirpur 13", "Mirpur 14", "Kalshi", "Agargaon", "Shewrapara", "Kazipara", "Mirpur Cantonment", "Kallaynnpur", "Darus Salam", "Azampur", "Nikunjo 1", "Khilkhet", "Uttar Khan/Dakkhin Khan", "Kafrul", "Baridhara", "Baridhara Dohs", "Baridhara Block-J", "Shajadpur East", "Kuril", "Shipahibag", "Meradia", "Dhanmondi", "Dhanmondi 9a", "Dhanmondi R/A", "Dhanmondi 9", "Dhanmondi 8a", "Dhanmondi 8", "Dhanmondi 1", "Dhanmondi 2", "Dhanmondi 11a", "Dhanmondi 12a", "Dhanmondi 10a", "Dhanmondi 1a", "Dhanmondi 2a", "Dhanmondi 3", "Dhanmondi 4", "Dhanmondi 3a", "Dhanmondi 4a", "Dhanmondi 5a", "Dhanmondi 5", "Dhanmondi 6", "Dhanmondi 6a", "Dhanmondi 7", "Dhanmondi 7a", "Dhanmondi 10", "Dhanmondi 11", "Dhanmondi 12", "Dhanmondi 13", "Dhanmondi 16", "Dhanmondi 13a", "Dhanmondi 14a", "Dahnmondi 15a", "Dhanmondi 14", "Dhanmondi 15", "Dhanmondi 27", "Dhanmondi 31", "Dhanmondi 30", "Dhanmondi 32", "Green Road", "Vasan Tek", "Jakir Hussain Road", "Senpara", "Bais Teki", "Kochukhet", "Ibrahimpur", "Balughat", "Matikata", "Janata Housing", "Eastern Housing", "Pallabi", "Rupnagor", "Ahamedbag", "Tolarbag", "Ansar Camp", "Golarteak", "Pirerbag", "Paikpara", "Mazar Road", "Uttara", "Uttara Sector 1", "Uttara Sector 3", "Uttara Sector 4", "Uttara Sector 5", "Uttara Sector 6", "Uttara Sector 8", "Uttara Sector 7", "Uttara Sector 9", "Uttara Sector 10", "Uttara Sector 11", "Uttara Sector 12", "Uttara Sector 13", "Uttara Sector 14", "Uttara Jasimuddin", "Lake City", "Ashkona", "Nondipara", "Wari", "Foridabad", "Sadarghat", "Gulistan", "Nawabpur", "Lakshmibazar", "Shajahanpur", "Shutrapur", "Fokirapool", "Hazipara", "Baily Road", "Shaheenbag", "Rajarbag", "Abdullahpur", "Mirpur", "Badda", "Middle Badda", "North Badda", "Bordhon Bari", "West Rampura", "Kalachandpur", "Nurerchala", "Gopipara", "Manda", "Bongshal", "Bashundhara 300ft", "Kaderabad Housing", "Chan Mia Housing", "Mohanogor Project", "Dhanmondi 28", "Dhaka Housing", "Iqbal Road", "Asad Avenue", "Aziz Mohollah", "Babar Road", "Old Airport Road", "Bfdc Mor", "Shahjanpur", "Shonargoan", "Tejturi Bazar", "Kawran Bazar", "Fdc", "Noyatola", "Peyarabag", "Pollima", "Ansar Camp(Moghbazar)", "Khilgaon Taltola", "Tilpa Para", "Modhubag", "Ulon", "Aftab Nagar", "Shatarkul", "Jamuna Future Park", "Aziz Sarani", "Coca-Cola", "Apollo Hospital", "Shoinik Club", "Bangladesh Betar", "Monipur", "Sony Cienema Hall", "South Bishil", "Bangla College", "Tolar Bag", "Technical", "Gabtoli", "Nikunjo 2", "Namapara", "Pink City", "Kawla", "Airport", "Haji Camp", "Koshai Bari", "Mollar Tek", "Prem Bagan", "Gawair", "Azampur Kacha Bazar", "Chalabon", "Rajlakhsmi", "House Building", "Diya Bari", "Uttara Residential Model Town", "Faydabad", "Kamarpara", "Baitul Aman Housing", "Bashbari", "Chand Uddan", "Geneva Camp", "Humayun Road", "Solimullah Road", "Sher Shah Suri Road", "Jafrabad", "Katasur", "Mohammadpur Thana (New)", "Rayer Bazar", "Modhu Bazar", "Khamar Bari", "Manik Mia Avenue", "Sobhanbag", "Tallabag", "West Razabazar", "Indira Road", "East Razabazar", "Kathalbagan", "Cresent Road", "North Road", "Central Road", "Hatirpool", "Paribag", "Science Lab", "Nilkhet", "Pilkhana", "Gonok Tuli", "Borhanpur", "Polashi", "Bakshi Bazar", "Baridhara Diplomatic", "Tb Gate", "Rasulbag", "Amtoli", "Korail Bosti", "Mohakhali Wireless", "Elenbari", "West Nakhalpara", "East Nakhalpara", "Nabisco", "Jahangir Gate", "Arjatpara", "Tejgaon Old Airport", "Joarsahara", "Banani (Chairman Bari)", "Mintu Road", "Shideshwari", "Shobujbag", "Basabo Patwary Goli", "Mather Tek", "Matuwail", "Dhonia", "Madinabag", "Rayerbag", "Islampur", "Patuatuli", "Shammibag", "Bonogram", "Tatibazar", "Kotowali", "Babubazar", "Mitford", "Nayabazar", "Chokbazar", "Siddiqbazar", "Saydabad", "Dilkusha", "Baytul Mokarrom", "Gpo", "Press Club", "Bijay Nagar", "Shegunbagicha", "Aga Sadiq Road", "Urdu Road", "Begumbazar", "Armanitola", "Nazirabazar", "Boro Shahebr Bazar", "Jagannath University", "Shakharibazar", "Narinda", "Chowdhury Para", "Kuratoli", "Bijoy Sharanani", "Demra", "Postogola", "Jurain", "Kajla", "Bibirbagicha", "Keraniganj Upazila Sadar"],
+    "Dinajpur": ["Birampur", "Birganj", "Biral", "Bochaganj", "Chirirbandar", "Fulbari", "Ghoraghat", "Hakimpur", "Kaharole", "Khansama", "Dinajpur Sadar", "Nawabganj", "Parbatipur"],
+    "Faridpur ": ["Alfadanga", "Bhanga", "Boalmari", "Char Bhadrasan", "Faridpur Sadar", "Madhukhali", "Nagarkanda", "Sadarpur", "Saltha"],
+    "Feni": ["Feni Sadar", "Daganbhuiyan ", "Chhagalnaiya", "Sonagaz", "Parshuram", "Fulgazi"],
+    "Gaibandha": ["Fulchhari", "Gaibandha Sadar", "Gobindaganj", "Palashbari", "Sadullapur", "Saghata", "Sundarganj"],
+    "Gazipur": ["Gazipur Sadar", "Kaliakair", "Kaliganj", "Kapasia", "Sreepur", "Tongi"],
+    "Gopalganj": ["Gopalganj Sadar", "Kashiani", "Kotalipara", "Muksudpur", "Tungipara"],
+    "Habiganj": ["Ajmiriganj", "Bahubal", "Baniachong", "Chunarughat", "Habiganj Sadar", "Lakhai", "Madhabpur", "Nabiganj"],
+    "Jamalpur": ["Bakshiganj", "Dewanganj", "Islampur", "Jamalpur Sadar", "Madarganj", "Melandaha", "Sarishabari Upazila"],
+    "Jashore": ["Abhaynagar", "Bagher Para", "Chaugachha", "Jhikargachha", "Keshabpur", "Jashore Sadar", "Manirampur", "Sharsha", "Benapole"],
+    "Jhalokati": ["Jhalokati Sadar", "Kanthalia", "Nalchity", "Rajapur"],
+    "Jhenaidah": ["Harinakunda", "Jhenaidah Sadar", "Kaliganj", "Kotchandpur", "Maheshpur", "Shailkupa"],
+    "Joypurhat": ["Akkelpur", "Joypurhat Sadar", "Kalai", "Khetlal", "Panchbibi"],
+    "Khagrachhari": ["Dighinala", "Khagrachhari Sadar", "Lakshmichhari", "Mahalchhari", "Manikchhari", "Matiranga", "Panchhari", "Ramgarh"],
+    "Khulna": ["Batiaghata", "Dacope", "Daulatpur", "Dumuria", "Dighalia", "Khalishpur", "Khan Jahan Ali", "Khulna Sadar", "Koyra", "Paikgachha", "Phultala", "Rupsa", "Sonadanga", "Terokhada"],
+    "Kishoreganj": ["Austagram", "Bajitpur", "Bhairab", "Hossainpur", "Itna", "Karimganj", "Katiadi", "Kishoreganj Sadar", "Kuliar Char", "Mithamain", "Nikli", "Pakundia", "Tarail"],
+    "Kurigram": ["Bhurungamari", "Char Rajibpur", "Chilmari", "Phulbari", "Kurigram Sadar", "Nageshwari", "Rajarhat", "Raumari", "Ulipur"],
+    "Kushtia": ["Bheramara", "Daulatpur", "Khoksa", "Kumarkhali", "Kushtia Sadar", "Mirpur"],
+    "Lakshmipur": ["Kamalnagar", "Lakshmipur Sadar", "Roypur", "Ramganj", "Ramgati"],
+    "Lalmonirhat": ["Aditmari", "Hatibandha", "Kaliganj", "Lalmonirhat Sadar", "Patgram"],
+    "Madaripur": ["Kalkini", "Madaripur Sadar", "Rajoir", "Shibchar"],
+    "Magura": ["Magura Sadar", "Mohammadpur", "Shalikha", "Sreepur"],
+    "Manikganj ": ["Daulatpur", "Ghior", "Harirampur", "Manikganj Sadar", "Saturia", "Shibalaya", "Singair"],
+    "Meherpur": ["Gangni", "Mujib Nagar", "Meherpur Sadar"],
+    "Moulvibazar": ["Barlekha", "Juri", "Kamalganj", "Kulaura", "Moulvibazar Sadar", "Rajnagar", "Sreemangal"],
+    "Munshiganj": ["Gazaria", "Lohajang", "Munshiganj Sadar", "Serajdikhan", "Sreenagar", "Tongibari"],
+    "Mymensingh": ["Bhaluka", "Dhobaura", "Fulbaria", "Gaffargaon", "Gauripur", "Haluaghat", "Ishwarganj", "Mymensingh Sadar", "Muktagachha", "Nandail", "Phulpur", "Trishal"],
+    "Naogaon": ["Atrai", "Badalgachhi", "Dhamoirhat", "Manda", "Mahadebpur", "Naogaon Sadar", "Niamatpur", "Patnitala", "Porsha", "Raninagar", "Sapahar"],
+    "Narail": ["Kalia", "Lohagara", "Narail Sadar"],
+    "Narayanganj": ["Araihazar", "Sonargaon", "Bandar", "Narayanganj Sadar", "Rupganj"],
+    "Narsingdi": ["Belabo", "Manohardi", "Narsingdi Sadar", "Palash", "Roypura", "Shibpur"],
+    "Natore": ["Bagatipara", "Baraigram", "Gurudaspur", "Lalpur", "Natore Sadar", "Singra"],
+    "Nawabganj": ["Bholahat", "Gomastapur", "Nachole", "Chapai Nababganj Sadar", "Shibganj"],
+    "Netrakona": ["Atpara", "Barhatta", "Durgapur", "Khaliajuri", "Kalmakanda", "Kendua", "Madan", "Mohanganj", "Netrokona Sadar", "Purbadhala"],
+    "Nilphamari": ["Dimla Upazila", "Domar Upazila", "Jaldhaka Upazila", "Kishoreganj Upazila", "Nilphamari Sadar Upaz", "Saidpur Upazila"],
+    "Noakhali": ["Begumganj", "Chatkhil", "Companiganj", "Hatiya", "Kabirhat", "Senbagh", "Sonaimuri", "Subarnachar", "Noakhali Sadar"],
+    "Pabna": ["Atgharia", "Bera", "Bhangura", "Chatmohar", "Faridpur", "Ishwardi", "Pabna Sadar", "Santhia", "Sujanagar"],
+    "Panchagarh": ["Atwari", "Boda", "Debiganj", "Panchagarh Sadar", "Tentulia"],
+    "Patuakhali": ["Bauphal", "Dashmina", "Dumki", "Galachipa", "Kalapara", "Mirzaganj", "Patuakhali Sadar", "Rangabali"],
+    "Pirojpur": ["Bhandaria", "Kawkhali", "Mathbaria", "Nazirpur", "Pirojpur Sadar", "Nesarabad (Swarupkati)", "Zianagar"],
+    "Rajbari": ["Baliakandi", "Goalanda", "Kalukhali", "Pangsha", "Rajbari Sadar"],
+    "Rajshahi": ["Bagha", "Baghmara", "Boalia", "Charghat", "Durgapur", "Godagari", "Matihar", "Mohanpur", "Paba", "Puthia", "Rajpara", "Shah Makhdum", "Tanore"],
+    "Rangamati": ["Baghaichhari", "Barkal Upazila", "Kawkhali (Betbunia)", "Belai Chhari Upazi", "Kaptai Upazila", "Jurai Chhari Upazil", "Langadu Upazila", "Naniarchar Upazila", "Rajasthali Upazila", "Rangamati Sadar Upazila"],
+    "Rangpur": ["Badarganj", "Gangachara", "Kaunia", "Rangpur Sadar", "Mitha Pukur", "Pirgachha", "Pirganj", "Taraganj"],
+    "Satkhira": ["Assasuni", "Debhata", "Kalaroa", "Kaliganj", "Satkhira Sadar", "Shyamnagar", "Tala"],
+    "Shariatpur": ["Bhedarganj", "Damudya", "Gosairhat", "Naria", "Shariatpur Sadar", "Zanjira"],
+    "Sherpur": ["Jhenaigati", "Nakla", "Nalitabari", "Sherpur Sadar", "Sreebardi"],
+    "Sirajganj": ["Belkuchi", "Chauhali", "Kamarkhanda", "Kazipur", "Royganj", "Shahjadpur", "Sirajganj Sadar", "Tarash", "Ullah Para"],
+    "Sunamganj": ["Bishwambarpur", "Chhatak", "Dakshin Sunamganj", "Derai", "Dharampasha", "Dowarabazar", "Jagannathpur", "Jamalganj", "Sulla", "Sunamganj Sadar", "Tahirpur"],
+    "Sylhet": ["Balaganj", "Beani Bazar", "Bishwanath", "Companiganj", "Dakshin Surma", "Fenchuganj", "Golapganj", "Gowainghat", "Jaintiapur", "Kanaighat", "Sylhet Sadar", "Zakiganj"],
+    "Tangail": ["Basail", "Bhuapur", "Delduar", "Dhanbari", "Ghatail", "Gopalpur", "Kalihati", "Madhupur", "Mirzapur", "Nagarpur", "Sakhipur", "Tangail Sadar"],
+    "Thakurgaon": ["Baliadangi", "Haripur", "Pirganj", "Ranisankail", "Thakurgaon Sadar"]
+};
+
+const districtSelect = document.getElementById('districtSelect');
+const citySelect = document.getElementById('citySelect');
+
+// Populate district dropdown (alphabetically)
+Object.keys(locations).sort().forEach(function(district) {
+    var opt = document.createElement('option');
+    opt.value = district;
+    opt.textContent = district;
+    districtSelect.appendChild(opt);
+});
+
+function loadCities() {
+    var selected = districtSelect.value;
+    citySelect.innerHTML = '<option value="" selected disabled>-- Select City / Area --</option>';
+    if (selected && locations[selected]) {
+        citySelect.disabled = false;
+        locations[selected].sort().forEach(function(city) {
+            var opt = document.createElement('option');
+            opt.value = city;
+            opt.textContent = city;
+            citySelect.appendChild(opt);
+        });
+    } else {
+        citySelect.disabled = true;
+        citySelect.innerHTML = '<option value="" selected disabled>-- Select District First --</option>';
+    }
+    updateAddressPreview();
+}
+
+citySelect.addEventListener('change', updateAddressPreview);
+document.getElementById('manualStreet').addEventListener('input', updateAddressPreview);
+
+function updateAddressPreview() {
+    var street = document.getElementById('manualStreet').value.trim();
+    var district = districtSelect.value;
+    var city = citySelect.value;
+    var preview = document.getElementById('addressPreview');
+    var previewText = document.getElementById('addressPreviewText');
+    var hiddenField = document.getElementById('manualAddressHidden');
+
+    if (street && district && city) {
+        var full = street + ', ' + city + ', ' + district + ', Bangladesh.';
+        previewText.textContent = full;
+        hiddenField.value = full;
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+        hiddenField.value = '';
+    }
+}
+
+function fillSavedAddress() {
+    var sel = document.getElementById('savedAddressSelect');
+    var opt = sel.options[sel.selectedIndex];
+    if (!opt || !opt.value) return;
+    document.querySelector('input[name="name"]').value = opt.dataset.name || '';
+    document.querySelector('input[name="phone"]').value = opt.dataset.phone || '';
+    document.getElementById('manualStreet').value = opt.dataset.street || '';
+
+    var district = opt.dataset.district || '';
+    var area = opt.dataset.area || '';
+    if (district) {
+        var ds = document.getElementById('districtSelect');
+        for (var i = 0; i < ds.options.length; i++) {
+            if (ds.options[i].value === district) {
+                ds.selectedIndex = i;
+                loadCities();
+                break;
+            }
+        }
+    }
+    if (area) {
+        var cs = document.getElementById('citySelect');
+        for (var i = 0; i < cs.options.length; i++) {
+            if (cs.options[i].value === area) {
+                cs.selectedIndex = i;
+                break;
+            }
+        }
+    }
+    updateAddressPreview();
+}
+
+function toggleDeliveryOption() {
+    var manual = document.getElementById('manualAddressSection');
+    var partner = document.getElementById('partnerAddressSection');
+    var manualRadio = document.querySelector('input[name="delivery_option"][value="manual"]');
+    var partnerRadio = document.querySelector('input[name="delivery_option"][value="partner"]');
+    var hiddenField = document.getElementById('manualAddressHidden');
+    var partnerSelect = document.querySelector('select[name="delivery_partner"]');
+
+    if (manualRadio.checked) {
+        manual.style.display = 'block';
+        partner.style.display = 'none';
+        hiddenField.required = true;
+        partnerSelect.required = false;
+    } else {
+        manual.style.display = 'none';
+        partner.style.display = 'block';
+        hiddenField.required = false;
+        partnerSelect.required = true;
+    }
+}
+
+function fillPartnerAddress() {
+    var select = document.getElementById('partnerSelect');
+    var option = select.options[select.selectedIndex];
+    if (!option || !option.value) return;
+
+    document.getElementById('partnerStreet').value = option.dataset.street || '';
+    document.getElementById('partnerUpazila').value = option.dataset.upazila || '';
+    document.getElementById('partnerDistrict').value = option.dataset.district || '';
+    document.getElementById('partnerDivision').value = option.dataset.division || '';
+}
+
+document.getElementById('checkoutForm').addEventListener('submit', function() {
+    updateAddressPreview();
+});
+</script>
+{% endblock %}

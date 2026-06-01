@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load socialaccount %}
+
+{% block title %}Register - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="auth-form">
+        <h1>Register</h1>
+        <form method="POST" action="{% url 'account_signup' %}">
+            {% csrf_token %}
+            {% if form.errors %}
+            <div class="alert alert-error">
+                {% for field in form %}{% for error in field.errors %}<div>{{ error }}</div>{% endfor %}{% endfor %}
+                {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+            </div>
+            {% endif %}
+            {{ form.as_p }}
+            {% if redirect_field_value %}<input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">{% endif %}
+            <button type="submit" class="btn btn-primary" style="width:100%;">Register</button>
+        </form>
+        {% get_providers as socialaccount_providers %}
+        {% if socialaccount_providers %}
+        <div style="margin-top:20px;text-align:center;border-top:1px solid #eee;padding-top:20px;">
+            <p style="color:#888;font-size:13px;margin-bottom:12px;">Or register with</p>
+            {% for provider in socialaccount_providers %}
+            <a href="{% provider_login_url provider.id process='signup' %}" style="display:inline-block;padding:10px 25px;margin:4px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;font-size:13px;">
+                <i class="fa fa-{{ provider.name|lower }}"></i> {{ provider.name }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <p style="text-align:center;margin-top:15px;">
+            Already have an account? <a href="{% url 'account_login' %}" style="color:#e74847;">Login here</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

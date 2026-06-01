@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Product - Uddoktar Dokan{% endblock %}
+
+{% block content %}
+<div class="container page-content">
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a> / <span>All Product</span>
+    </div>
+
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+        <h1>All Product</h1>
+        <div class="shop-toolbar">
+            <div class="view-toggle" id="viewToggle">
+                <button class="view-btn active" data-view="grid" title="Grid View"><i class="fa fa-th"></i></button>
+                <button class="view-btn" data-view="list" title="List View"><i class="fa fa-list"></i></button>
+            </div>
+            <div class="sort-dropdown">
+                <select id="sortSelect" onchange="window.location.href=this.value;">
+                    <option value="?{% if current_category %}category={{ current_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}{% if current_label %}label={{ current_label }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}sort=">Default</option>
+                    <option value="?{% if current_category %}category={{ current_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}{% if current_label %}label={{ current_label }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}sort=price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="?{% if current_category %}category={{ current_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}{% if current_label %}label={{ current_label }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}sort=price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                    <option value="?{% if current_category %}category={{ current_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}{% if current_label %}label={{ current_label }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}sort=name_asc" {% if current_sort == 'name_asc' %}selected{% endif %}>Name: A to Z</option>
+                    <option value="?{% if current_category %}category={{ current_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}{% if current_label %}label={{ current_label }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}sort=name_desc" {% if current_sort == 'name_desc' %}selected{% endif %}>Name: Z to A</option>
+                    <option value="?{% if current_category %}category={{ current_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}{% if current_label %}label={{ current_label }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}sort=newest" {% if current_sort == 'newest' %}selected{% endif %}>Newest First</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    {% if current_category or search_query or current_label or min_price or max_price %}
+    <div class="active-filters">
+        {% if search_query %}
+        <span class="filter-tag">
+            Search: "{{ search_query }}"
+            <a href="?{% if current_category %}category={{ current_category }}&{% endif %}{% if current_label %}label={{ current_label }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}{% endif %}" class="filter-remove">&times;</a>
+        </span>
+        {% endif %}
+        {% if current_category %}
+        <span class="filter-tag">
+            Category: {{ current_category }}
+            <a href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if current_label %}label={{ current_label }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}{% endif %}" class="filter-remove">&times;</a>
+        </span>
+        {% endif %}
+        {% if current_label %}
+        <span class="filter-tag">
+            Label: {{ current_label|title }}
+            <a href="?{% if current_category %}category={{ current_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}{% endif %}" class="filter-remove">&times;</a>
+        </span>
+        {% endif %}
+        <a href="{% url 'shop_grid' %}" class="filter-clear-all">Clear All</a>
+    </div>
+    {% endif %}
+
+    <div class="shop-layout">
+        <aside class="shop-sidebar">
+            <div class="sidebar-widget">
+                <h4 class="sidebar-title">Categories</h4>
+                <ul class="category-filter">
+                    <li><a href="{% url 'shop_grid' %}{% if search_query %}?q={{ search_query }}{% endif %}{% if min_price %}{% if search_query %}&{% else %}?{% endif %}min_price={{ min_price }}{% endif %}{% if max_price %}{% if search_query or min_price %}&{% else %}?{% endif %}max_price={{ max_price }}{% endif %}" class="{% if not current_category %}active{% endif %}">All Categories</a></li>
+                    {% for cat in categories %}
+                    <li>
+                        <a href="?category={{ cat.slug }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}" class="{% if current_category == cat.slug %}active{% endif %}">{{ cat.name }}</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="sidebar-widget">
+                <h4 class="sidebar-title">Labels</h4>
+                <ul class="category-filter">
+                    <li><a href="{% url 'shop_grid' %}{% if search_query %}?q={{ search_query }}{% endif %}{% if min_price %}{% if search_query %}&{% else %}?{% endif %}min_price={{ min_price }}{% endif %}{% if max_price %}{% if search_query or min_price %}&{% else %}?{% endif %}max_price={{ max_price }}{% endif %}" class="{% if not current_label %}active{% endif %}">All</a></li>
+                    <li><a href="?label=new{% if search_query %}&q={{ search_query }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}" class="{% if current_label == 'new' %}active{% endif %}">New</a></li>
+                    <li><a href="?label=hot{% if search_query %}&q={{ search_query }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}" class="{% if current_label == 'hot' %}active{% endif %}">Hot</a></li>
+                    <li><a href="?label=discounted{% if search_query %}&q={{ search_query }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}" class="{% if current_label == 'discounted' %}active{% endif %}">Discounted</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-widget">
+                <h4 class="sidebar-title">Price Range</h4>
+                <form method="GET" action="{% url 'shop_grid' %}" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    {% if current_category %}<input type="hidden" name="category" value="{{ current_category }}">{% endif %}
+                    {% if current_label %}<input type="hidden" name="label" value="{{ current_label }}">{% endif %}
+                    {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+                    <input type="number" name="min_price" placeholder="Min" value="{{ min_price }}" style="width:70px;padding:6px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
+                    <span style="line-height:34px;">—</span>
+                    <input type="number" name="max_price" placeholder="Max" value="{{ max_price }}" style="width:70px;padding:6px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
+                    <button type="submit" style="padding:6px 12px;background:#e74847;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">Go</button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="shop-main">
+            {% if products %}
+            <div class="product-grid" id="productGrid">
+                {% for product in products %}
+                {% include 'store/product_card.html' %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="text-align:center; padding:40px 0; color:#888;">No products found.</p>
+            {% endif %}
+
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div id="scroll-sentinel" style="text-align:center; margin-top:30px; padding:20px 0;">
+                <div id="loading-indicator" style="display:none; color:#e74847; font-size:14px;">
+                    <i class="fa fa-spinner fa-spin"></i> Loading more products...
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+{% if page_obj.paginator.num_pages > 1 %}
+(function() {
+    var currentPage = {{ page_obj.number }};
+    var totalPages = {{ page_obj.paginator.num_pages }};
+    var isLoading = false;
+    var sentinel = document.getElementById('scroll-sentinel');
+    var loader = document.getElementById('loading-indicator');
+
+    var observer = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting && !isLoading && currentPage < totalPages) {
+            isLoading = true;
+            loader.style.display = 'block';
+
+            var nextPage = currentPage + 1;
+            var url = new URL(window.location.href);
+            url.searchParams.set('page', nextPage);
+            url.searchParams.set('ajax', '1');
+
+            fetch(url.toString())
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    var grid = document.querySelector('.product-grid');
+                    var emptyMsg = grid.querySelector('p');
+                    if (emptyMsg && grid.children.length === 1) emptyMsg.remove();
+                    grid.insertAdjacentHTML('beforeend', data.html);
+                    currentPage = nextPage;
+                })
+                .catch(function() {})
+                .finally(function() {
+                    loader.style.display = 'none';
+                    isLoading = false;
+                    if (currentPage >= totalPages) {
+                        observer.unobserve(sentinel);
+                        sentinel.innerHTML = '<p style="color:#999; text-align:center;">All products loaded.</p>';
+                    }
+                });
+        }
+    }, { rootMargin: '200px' });
+
+    observer.observe(sentinel);
+})();
+{% endif %}
+
+// Grid/List view toggle
+(function() {
+    var grid = document.getElementById('productGrid');
+    var toggleBtns = document.querySelectorAll('.view-btn');
+    var savedView = localStorage.getItem('shopView') || 'grid';
+
+    function setView(view) {
+        grid.classList.toggle('list-view', view === 'list');
+        toggleBtns.forEach(function(b) {
+            b.classList.toggle('active', b.dataset.view === view);
+        });
+        localStorage.setItem('shopView', view);
+    }
+
+    setView(savedView);
+
+    toggleBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            setView(this.dataset.view);
+        });
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  # 1. Managed Database (Defang provisions a fully managed cloud Postgres)
+  db:
+    image: postgres:16-alpine
+    x-defang-postgres: true
+    environment:
+      POSTGRES_DB: uddoktar_dokan
+      POSTGRES_USER: uddoktar
+      POSTGRES_PASSWORD: 
+
+  # 2. Managed Redis (Defang provisions a managed cloud Redis)
+  redis:
+    image: redis:7-alpine
+    x-defang-redis: true
+
+  # 3. Your Core Django Application
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_SECRET_KEY: 
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: "*"
+      # Replace below with your actual domain later if needed, or leave blank for defang's url
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://uddoktardokan.com
+      DATABASE_URL: postgres://uddoktar:${POSTGRES_PASSWORD}@db:5432/uddoktar_dokan
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+    depends_on:
+      - db
+      - redis
+    x-defang:
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8000"]
+        interval: 15s
+        timeout: 5s
+        retries: 3
+
+  # 4. Celery Background Worker
+  celery:
+    build: .
+    command: celery -A config worker -l info
+    environment:
+      DJANGO_SECRET_KEY: 
+      DJANGO_DEBUG: "False"
+      DATABASE_URL: postgres://uddoktar:${POSTGRES_PASSWORD}@db:5432/uddoktar_dokan
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+    depends_on:
+      - db
+      - redis

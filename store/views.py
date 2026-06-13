@@ -37,7 +37,7 @@ def validate_upload(file_obj):
     if file_obj.size > MAX_UPLOAD_SIZE:
         raise ValueError(f'File too large ({file_obj.size // 1024} KB). Maximum 5 MB.')
     return True
-from .models import Product, Category, Partner, Cart, CartItem, BlogPost, Contact, Order, OrderItem, Slider, HomeBanner, ProductReview, PartnerBanner, PartnerNavMenu, Page, SideBanner, ProductColorVariant, ProductSizeVariant, ProductImage, LandingPage, ServerFee, Coupon, CouponUsage, CustomOrder, AdminCommission, PartnerWallet, WalletTransaction, WithdrawalRequest, PayoutMethod, WalletSettings, PlatformBalance, Wishlist, WishlistItem, Notification, ShippingRule, RefundRequest, SiteLogo, ManualPaymentMethod, PosOrder, PosOrderItem, PartnerSlider, Conversation, Message, ConversationReadStatus, ProductQA, SupportTicket, TicketReply, PRESET_COLORS, PRESET_SIZES, MedicineProduct, MedicinePosOrder, MedicinePosOrderItem, MedicineSubscription, WalletRechargeInstruction, SubscriptionPackage, Address
+from .models import Product, Category, Partner, Cart, CartItem, BlogPost, Contact, Order, OrderItem, Slider, HomeBanner, ProductReview, PartnerBanner, PartnerNavMenu, Page, SideBanner, ProductColorVariant, ProductSizeVariant, ProductImage, LandingPage, ServerFee, Coupon, CouponUsage, CustomOrder, AdminCommission, PartnerWallet, WalletTransaction, WithdrawalRequest, PayoutMethod, WalletSettings, PlatformBalance, Wishlist, WishlistItem, Notification, ShippingRule, RefundRequest, SiteLogo, ManualPaymentMethod, PosOrder, PosOrderItem, PartnerSlider, Conversation, Message, ConversationReadStatus, ProductQA, SupportTicket, TicketReply, PRESET_COLORS, PRESET_SIZES, MedicineProduct, MedicinePosOrder, MedicinePosOrderItem, MedicineSubscription, WalletRechargeInstruction, SubscriptionPackage, Address, THEME_CHOICES
 
 
 def home(request):
@@ -1428,6 +1428,7 @@ def dashboard_product_create(request):
         category_id = request.POST.get('category', '').strip()
         old_price = request.POST.get('old_price', '').strip()
         label = request.POST.get('label', '').strip()
+        custom_label = request.POST.get('custom_label', '').strip()
         video_url = request.POST.get('video_url', '').strip()
         available = request.POST.get('available') == 'on'
 
@@ -1464,6 +1465,7 @@ def dashboard_product_create(request):
             cost_price=float(cost_price) if cost_price else None,
             old_price=old_price if old_price else None,
             label=label if label else None,
+            custom_label=custom_label or None,
             stock=int(stock) if stock.isdigit() else 0,
             low_stock_threshold=int(low_stock_threshold) if low_stock_threshold.isdigit() else 5,
             short_description=short_description,
@@ -1483,7 +1485,7 @@ def dashboard_product_create(request):
             medicine_generic_name=medicine_generic_name,
             medicine_strength=medicine_strength,
             medicine_dosage_form=medicine_dosage_form,
-            is_published=False,
+            is_published=True,
         )
         if 'image' in request.FILES:
             try:
@@ -1536,6 +1538,7 @@ def dashboard_product_edit(request, pk):
         category_id = request.POST.get('category', '').strip()
         old_price = request.POST.get('old_price', '').strip()
         label = request.POST.get('label', '').strip()
+        product.custom_label = request.POST.get('custom_label', '').strip() or None
         product.short_description = request.POST.get('short_description', '').strip()
         product.description = request.POST.get('description', product.description).strip()
         product.video_url = request.POST.get('video_url', '').strip() or None
@@ -1745,6 +1748,7 @@ def dashboard_product_duplicate(request, pk):
         price=original.price,
         old_price=original.old_price,
         label=original.label,
+        custom_label=original.custom_label,
         short_description=original.short_description,
         description=original.description,
         stock=0,
@@ -1794,6 +1798,7 @@ def dashboard_profile_edit(request):
         phone = request.POST.get('phone', '').strip()
         description = request.POST.get('description', '').strip()
         shop_style = request.POST.get('shop_style', '').strip()
+        theme = request.POST.get('theme', '').strip()
         if name:
             partner.name = name
         if phone:
@@ -1802,6 +1807,7 @@ def dashboard_profile_edit(request):
             partner.description = description
         if shop_style:
             partner.shop_style = shop_style
+        partner.theme = theme if theme else ''
         if 'logo' in request.FILES:
             try:
                 validate_upload(request.FILES['logo'])
@@ -1841,7 +1847,11 @@ def dashboard_profile_edit(request):
         partner.save()
         return redirect('dashboard')
     extra_banners = partner.extra_banners.all()
-    return render(request, 'store/dashboard_profile_edit.html', {'partner': partner, 'extra_banners': extra_banners})
+    return render(request, 'store/dashboard_profile_edit.html', {
+        'partner': partner,
+        'extra_banners': extra_banners,
+        'THEME_CHOICES': THEME_CHOICES,
+    })
 
 
 @login_required
@@ -3159,8 +3169,7 @@ def medicine_pos_product_search(request):
     if q:
         products = products.filter(
             Q(brand_name__icontains=q) | Q(generic_name__icontains=q) |
-            Q(strength__icontains=q) | Q(sku__icontains=q) | Q(dosage_form__icontains=q) |
-            Q(barcode__icontains=q)
+            Q(strength__icontains=q) | Q(sku__icontains=q) | Q(dosage_form__icontains=q)
         )
     products = products.order_by('brand_name')[:30]
     data = [{
@@ -3172,7 +3181,6 @@ def medicine_pos_product_search(request):
         'dosage_form': p.dosage_form,
         'price': str(p.price),
         'stock': p.stock,
-        'barcode': p.barcode or '',
         'image': p.image.url if p.image else '',
     } for p in products]
     return JsonResponse({'products': data})

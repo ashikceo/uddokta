@@ -90,7 +90,13 @@
                                 <option value="new" {% if product.label == 'new' %}selected{% endif %}>New</option>
                                 <option value="hot" {% if product.label == 'hot' %}selected{% endif %}>Hot Item</option>
                                 <option value="discounted" {% if product.label == 'discounted' %}selected{% endif %}>Discounted</option>
+                                <option value="used" {% if product.label == 'used' %}selected{% endif %}>Used</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Custom Label</label>
+                            <input type="text" name="custom_label" class="form-control" placeholder="e.g. Best Seller, Limited Edition" value="{{ product.custom_label|default:'' }}">
+                            <small class="text-muted">Overrides the selected label above when set.</small>
                         </div>
                     </div>
                 </div>

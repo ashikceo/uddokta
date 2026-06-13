@@ -3,6 +3,8 @@
 
 {% block title %}{{ partner.name }} Store{% endblock %}
 
+{% block theme %}{% if partner.theme %}{{ partner.theme }}{% else %}{{ site_theme }}{% endif %}{% endblock %}
+
 {% block site_logo %}
 {% if partner.logo %}
 <img src="{{ partner.logo.url }}" alt="{{ partner.name }} logo" style="max-height:50px; width:auto;">

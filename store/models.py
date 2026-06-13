@@ -62,6 +62,22 @@ class Category(models.Model):
         return self.name
 
 
+THEME_PRESETS = [
+    ('default', 'Default Red', '#e74847', '#333333'),
+    ('ocean_blue', 'Ocean Blue', '#2196F3', '#0D47A1'),
+    ('forest_green', 'Forest Green', '#4CAF50', '#1B5E20'),
+    ('royal_purple', 'Royal Purple', '#9C27B0', '#4A148C'),
+    ('sunset_orange', 'Sunset Orange', '#FF5722', '#BF360C'),
+    ('teal', 'Teal', '#009688', '#004D40'),
+    ('dark_mode', 'Dark Mode', '#1E1E1E', '#424242'),
+    ('rose_pink', 'Rose Pink', '#E91E63', '#880E4F'),
+    ('amber', 'Amber', '#FFC107', '#FF6F00'),
+    ('slate_gray', 'Slate Gray', '#607D8B', '#263238'),
+]
+
+THEME_CHOICES = [(t[0], t[1]) for t in THEME_PRESETS]
+
+
 class Partner(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=200)
@@ -94,6 +110,7 @@ class Partner(models.Model):
         ('medicine', 'Medicine Shop'),
     ]
     shop_style = models.CharField(max_length=30, choices=SHOP_STYLE_CHOICES, default='general', blank=True)
+    theme = models.CharField(max_length=30, choices=THEME_CHOICES, blank=True, default='', verbose_name='Store Theme', help_text='Override site theme for this store. Leave empty to use site default.')
     has_medicine_access = models.BooleanField(default=False, verbose_name='Medicine Catalog Access', help_text='Grant access to the global medicine product catalog for POS')
     medicine_pos_enabled = models.BooleanField(default=False, verbose_name='Medicine POS Enabled', help_text='Master switch — enables Medicine POS with subscription tracking')
     blocked = models.BooleanField(default=False, verbose_name='Block deletion', help_text='When blocked, this partner cannot be deleted from admin (prevents cascade delete through related medicine models)')
@@ -121,6 +138,7 @@ class Product(models.Model):
         ('new', 'New'),
         ('hot', 'Hot Item'),
         ('discounted', 'Discounted'),
+        ('used', 'Used'),
     ]
     name = models.CharField(max_length=300)
     sku = models.CharField(max_length=100, blank=True, verbose_name='SKU (Stock Keeping Unit)', help_text='Unique product code for inventory tracking')
@@ -133,6 +151,7 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     old_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     label = models.CharField(max_length=20, choices=LABEL_CHOICES, blank=True, null=True)
+    custom_label = models.CharField(max_length=50, blank=True, null=True, verbose_name='Custom Label')
     short_description = models.CharField(max_length=300, blank=True)
     description = models.TextField(blank=True)
     stock = models.IntegerField(default=0)
@@ -592,8 +611,12 @@ class ProductSizeVariant(models.Model):
 
 class SiteLogo(models.Model):
     logo = models.ImageField(upload_to='site_logo/')
+    favicon = models.ImageField(upload_to='site_favicon/', blank=True, null=True)
     site_name = models.CharField(max_length=200, default='Uddoktar Dokan')
     site_tagline = models.CharField(max_length=200, default='উদ্যোক্তার বাজার', blank=True)
+    site_theme = models.CharField(max_length=30, choices=THEME_CHOICES, blank=True, default='', help_text='Site-wide theme (applies to homepage and all partner stores)')
+    site_primary_color = models.CharField(max_length=20, blank=True, default='#e74847', help_text='Site-wide primary color (hex)')
+    site_secondary_color = models.CharField(max_length=20, blank=True, default='#333333', help_text='Site-wide secondary color (hex)')
     partner_delivery_enabled = models.BooleanField(default=True, verbose_name='Allow Partner/Dealer address selection in checkout')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -606,8 +629,13 @@ class SiteLogo(models.Model):
         if self.pk is None and SiteLogo.objects.exists():
             existing = SiteLogo.objects.first()
             existing.logo = self.logo or existing.logo
+            existing.favicon = self.favicon or existing.favicon
             existing.site_name = self.site_name
             existing.site_tagline = self.site_tagline
+            existing.site_theme = self.site_theme
+            existing.site_primary_color = self.site_primary_color
+            existing.site_secondary_color = self.site_secondary_color
+            existing.partner_delivery_enabled = self.partner_delivery_enabled
             existing.save()
             return
         super().save(*args, **kwargs)

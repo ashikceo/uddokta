@@ -1,11 +1,14 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url
 
 load_dotenv()
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Security Settings
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
@@ -91,23 +94,31 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# Database Configuration
+# Dynamically connects to Managed PostgreSQL on Defang cloud, or drops back to local SQLite for local testing
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-        'OPTIONS': {
-            'timeout': 20,
-        },
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+            'OPTIONS': {
+                'timeout': 20,
+            },
+        }
+    }
 
 
 # Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -125,32 +136,28 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
+# Static and Media Files Delivery (Updated for dynamic cloud media compatibility)
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Uses CompressedStaticFilesStorage to fix the WhiteNoise conflict with your URLs media server routing
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+
+# Media routing for banner and product image file uploads
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 
-# Security
+# Security Overrides for Cloud SSL/HTTPS Production
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000
@@ -164,7 +171,7 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
 
-# Site contact info
+# Site Contact Information
 SITE_PHONE = '01910422200'
 SITE_WHATSAPP = '8801910422200'
 SITE_ADDRESS_US = 'Delwar,USA'
@@ -172,11 +179,11 @@ SITE_ADDRESS_BD = '144/G,Zigatola(Near BGB Pilkhana)Mirpur-1,Dhaka:1206'
 SITE_FACEBOOK = 'https://www.facebook.com/uddoktarbazaresdp'
 SITE_YOUTUBE = 'https://www.youtube.com/@uddoktertbazartv'
 
-# CORS
+# CORS Settings
 CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
 CORS_ALLOW_CREDENTIALS = True
 
-# REST Framework
+# Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -184,11 +191,11 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
 
-# Rate limiting
+# Rate Limiting Engine
 RATELIMIT_ENABLE = True
 RATELIMIT_VIEW = 'store.views.ratelimit_error'
 
-# Email
+# SMTP Outbound Email Services
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST', '')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
@@ -197,7 +204,7 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@uddoktardokan.com')
 
-# Cache (Redis with fallback to local memory)
+# Caching Infrastructure (Automated fallback to system memory inside playground fallback logs)
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 if REDIS_URL and not DEBUG:
     CACHES = {
@@ -214,13 +221,14 @@ else:
         }
     }
 
-# Celery
+# Celery Task Micro-Queues & Schedules
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', os.getenv('REDIS_URL', 'redis://localhost:6379/1'))
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 if DEBUG:
     CELERY_TASK_ALWAYS_EAGER = True
+
 CELERY_BEAT_SCHEDULE = {
     'check-abandoned-carts': {
         'task': 'store.tasks.check_abandoned_carts',
@@ -240,10 +248,10 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-# Admin banner message (shown in admin on every page, HTML allowed)
+# Administrative Systems Messaging 
 ADMIN_BANNER_MESSAGE = ''
 
-# SSLCommerz
+# SSLCommerz Payment Core Handlers
 SSLCOMMERZ_STORE_ID = os.getenv('SSLCOMMERZ_STORE_ID', '')
 SSLCOMMERZ_STORE_PASS = os.getenv('SSLCOMMERZ_STORE_PASS', '')
 SSLCOMMERZ_IS_SANDBOX = os.getenv('SSLCOMMERZ_IS_SANDBOX', 'True') == 'True'
@@ -254,39 +262,33 @@ else:
     SSLCOMMERZ_API_URL = 'https://secure.sslcommerz.com/gwprocess/v4/api.php'
     SSLCOMMERZ_API_VALIDATION = 'https://secure.sslcommerz.com/validator/api/validationserverAPI.php'
 
-# Logging
+# Updated Structural Log Trackers for Containerized Cloud Environments
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '{levelname} {asctime} {module} {message}',
             'style': '{',
         },
     },
     'handlers': {
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'django.log',
-            'formatter': 'verbose',
-        },
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
         'store': {
-            'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
     },
 }
-

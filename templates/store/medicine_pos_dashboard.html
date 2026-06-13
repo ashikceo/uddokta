@@ -34,6 +34,7 @@ body { min-height:100vh; display:flex; flex-direction:column; }
 .cart-item .ci-qty { display:flex; align-items:center; gap:2px; }
 .cart-item .ci-qty button { width:22px; height:22px; border:1px solid #ddd; border-radius:3px; background:#fff; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; }
 .cart-item .ci-qty button:hover { background:#f5f5f5; }
+.cart-item .ci-qty input { width:36px; padding:1px 2px; border:1px solid #ddd; border-radius:3px; font-size:12px; text-align:center; }
 .cart-item .ci-qty span { min-width:16px; text-align:center; font-weight:600; font-size:12px; }
 .cart-item .ci-remove { color:#ccc; cursor:pointer; font-size:14px; padding:2px 4px; }
 .cart-item .ci-remove:hover { color:#6f42c1; }
@@ -230,9 +231,7 @@ function renderCart() {
         html += `<div class="cart-item">
             <div class="ci-name">${c.name}</div>
             <div class="ci-qty">
-                <button onclick="changeQty(${i}, -1)">−</button>
-                <span>${c.qty}</span>
-                <button onclick="changeQty(${i}, 1)">+</button>
+                <input type="number" class="ci-qty-input" value="${c.qty}" min="1" onchange="setQty(${i}, this.value)" onfocus="this.select()">
             </div>
             <div class="ci-price">৳${(c.price * c.qty).toFixed(0)}</div>
             <div class="ci-remove" onclick="removeItem(${i})"><i class="fa fa-times"></i></div>
@@ -244,11 +243,10 @@ function renderCart() {
     updateTotals();
 }
 
-function changeQty(index, delta) {
-    const c = cart[index];
-    const newQty = c.qty + delta;
-    if (newQty < 1) { removeItem(index); return; }
-    c.qty = newQty;
+function setQty(index, value) {
+    const qty = parseInt(value);
+    if (isNaN(qty) || qty < 1) { removeItem(index); return; }
+    cart[index].qty = qty;
     renderCart();
 }
 

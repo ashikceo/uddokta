@@ -15,26 +15,28 @@ services:
     image: redis:7-alpine
     x-defang-redis: true
 
-  # 3. Your Core Django Application
+# 3. Your Core Django Application
   web:
     build: .
-    ports:
-      - "8000:8000"
+    # Temporary command to create the admin user on startup
+    command: sh -c "python manage.py migrate --noinput && python -c \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').delete(); User.objects.create_superuser('admin', 'admin@uddoktardokan.com', 'YourSecurePassword123!')\" && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3"
     environment:
       DJANGO_SECRET_KEY: 
       DJANGO_DEBUG: "False"
       DJANGO_ALLOWED_HOSTS: "*"
-      # Replace below with your actual domain later if needed, or leave blank for defang's url
       DJANGO_CSRF_TRUSTED_ORIGINS: https://uddoktardokan.com
       DATABASE_URL: postgres://uddoktar:${POSTGRES_PASSWORD}@db:5432/uddoktar_dokan
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
+    volumes:
+      - media_data:/app/media  # Keeps your banners and images saved permanently
     depends_on:
       - db
       - redis
     x-defang:
       healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:8000"]
+        # Replaced curl with a built-in Python command so it doesn't fail if curl isn't installed
+        test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000', timeout=5)"]
         interval: 15s
         timeout: 5s
         retries: 3
@@ -49,6 +51,12 @@ services:
       DATABASE_URL: postgres://uddoktar:${POSTGRES_PASSWORD}@db:5432/uddoktar_dokan
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
+    volumes:
+      - media_data:/app/media  # Connects Celery worker to the same images folder
     depends_on:
       - db
       - redis
+
+# Named volume declaration for persistent storage
+volumes:
+  media_data:

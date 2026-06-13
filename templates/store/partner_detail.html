@@ -22,7 +22,9 @@
     <div class="product-grid">
         {% for product in products %}
         <div class="product-card">
-            {% if product.label %}
+            {% if product.custom_label %}
+            <span class="badge">{{ product.custom_label }}</span>
+            {% elif product.label %}
             <span class="badge {{ product.label }}">{{ product.get_label_display }}</span>
             {% endif %}
             <div class="product-image">

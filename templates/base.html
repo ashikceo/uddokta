@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ site_name }} & {{ site_tagline }}{% endblock %}</title>
+    {% block favicon %}
+    {% if site_logo and site_logo.favicon %}
+    <link rel="icon" type="image/x-icon" href="{{ site_logo.favicon.url }}">
+    {% endif %}
+    {% endblock %}
+    {% block head_extra %}
+    <style>:root{--partner-primary:{% if site_logo.site_primary_color %}{{ site_logo.site_primary_color }}{% else %}#e74847{% endif %};--partner-secondary:{% if site_logo.site_secondary_color %}{{ site_logo.site_secondary_color }}{% else %}#333333{% endif %}}</style>
+    {% endblock %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     {% load static %}

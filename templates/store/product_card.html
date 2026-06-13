@@ -1,8 +1,12 @@
 <div class="product-card">
-    {% if product.label == 'new' %}
+    {% if product.custom_label %}
+    <span class="product-badge">{{ product.custom_label }}</span>
+    {% elif product.label == 'new' %}
     <span class="product-badge">New</span>
     {% elif product.label == 'hot' %}
     <span class="product-badge badge-hot">Hot</span>
+    {% elif product.label == 'used' %}
+    <span class="product-badge badge-used">Used</span>
     {% elif product.old_price %}
     <span class="product-badge badge-discount">Discount</span>
     {% endif %}
@@ -35,7 +39,7 @@
         {% endif %}
         <div class="price-box">
             {% if product.price_on_request %}
-            <span class="special-price" style="font-size:12px; color:#e74847;">Price on Request</span>
+            <span class="special-price" style="font-size:12px; color:var(--partner-primary, #e74847);">Price on Request</span>
             {% else %}
             <span class="special-price">৳ {{ product.price }}</span>
             {% endif %}

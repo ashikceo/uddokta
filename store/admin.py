@@ -13,7 +13,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html, mark_safe
-from .models import Category, Partner, Product, ProductImage, ProductColorVariant, ProductSizeVariant, Cart, CartItem, BlogPost, Contact, Order, OrderItem, Slider, HomeBanner, ProductReview, SiteLogo, PartnerBanner, PartnerSlider, NavMenu, PartnerNavMenu, SocialMediaLink, Page, SideBanner, LandingPage, ServerFee, Coupon, CouponUsage, CustomOrder, AdminCommission, PartnerWallet, WalletTransaction, WithdrawalRequest, PayoutMethod, WalletSettings, PlatformBalance, DeliveryLog, Wishlist, WishlistItem, Notification, ShippingRule, RefundRequest, ManualPaymentMethod, PosOrder, PosOrderItem, Conversation, Message, ConversationReadStatus, ProductQA, SupportTicket, TicketReply, MedicineProduct, MedicinePosOrder, MedicinePosOrderItem, MedicineSubscription, SubscriptionPackage, WalletRechargeInstruction
+from .models import Address, Category, Partner, Product, ProductImage, ProductColorVariant, ProductSizeVariant, Cart, CartItem, BlogPost, Contact, Order, OrderItem, Slider, HomeBanner, ProductReview, SiteLogo, PartnerBanner, PartnerSlider, NavMenu, PartnerNavMenu, SocialMediaLink, Page, SideBanner, LandingPage, ServerFee, Coupon, CouponUsage, CustomOrder, AdminCommission, PartnerWallet, WalletTransaction, WithdrawalRequest, PayoutMethod, WalletSettings, PlatformBalance, DeliveryLog, Wishlist, WishlistItem, Notification, ShippingRule, RefundRequest, ManualPaymentMethod, PosOrder, PosOrderItem, Conversation, Message, ConversationReadStatus, ProductQA, SupportTicket, TicketReply, MedicineProduct, MedicinePosOrder, MedicinePosOrderItem, MedicineSubscription, SubscriptionPackage, WalletRechargeInstruction
 from .admin_site import custom_admin_site
 
 
@@ -314,6 +314,17 @@ class ActivityLogAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None): return False
 
 
+# ─── Address ───
+
+@admin_register(Address, site=custom_admin_site)
+class AddressAdmin(admin.ModelAdmin):
+    list_display = ['label', 'name', 'phone', 'user', 'area', 'district', 'division', 'is_default', 'created']
+    list_filter = ['is_default', 'division', 'district', 'created']
+    search_fields = ['label', 'name', 'phone', 'street_address', 'area', 'district', 'user__username']
+    date_hierarchy = 'created'
+    readonly_fields = ['created', 'updated']
+
+
 # ─── Category ───
 
 @admin_register(Category, site=custom_admin_site)
@@ -356,6 +367,7 @@ class PartnerAdmin(ExcelExportMixin, admin.ModelAdmin):
         ('Address (Bangladesh)', {'fields': ['address_street', 'address_division', 'address_district', 'address_upazila'], 'classes': ['bd-address-picker']}),
         ('Verification', {'fields': ['voter_id']}),
         ('Branding', {'fields': ['logo', 'profile_image', 'banner']}),
+        ('Theme', {'fields': ['theme'], 'classes': ['collapse']}),
         ('Settings', {'fields': ['is_dealer', 'is_seller', 'is_union_agent', 'show_products', 'shop_style', 'has_medicine_access', 'medicine_pos_enabled']}),
         ('Admin', {'fields': ['blocked'], 'classes': ['collapse'], 'description': 'Block deletion to prevent accidental removal of this partner and its related data.'}),
     ]
@@ -558,10 +570,12 @@ class ProductAdmin(ExcelExportMixin, admin.ModelAdmin):
     stock_badge.short_description = 'Stock'
 
     def label_badge(self, obj):
-        if not obj.label:
+        if not obj.label and not obj.custom_label:
             return ''
-        colors = {'new': '#17a2b8', 'hot': '#dc3545', 'discounted': '#28a745'}
-        return format_html('<span style="background:{};color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;">{}</span>', colors[obj.label], obj.get_label_display())
+        colors = {'new': '#17a2b8', 'hot': '#dc3545', 'discounted': '#28a745', 'used': '#6c757d'}
+        label_text = obj.custom_label or obj.get_label_display()
+        color = colors.get(obj.label or '', '#6c757d')
+        return format_html('<span style="background:{};color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;">{}</span>', color, label_text)
     label_badge.short_description = 'Label'
 
     def available_status(self, obj):
@@ -1001,7 +1015,7 @@ class SliderAdmin(admin.ModelAdmin):
 
 @admin_register(SiteLogo, site=custom_admin_site)
 class SiteLogoAdmin(admin.ModelAdmin):
-    list_display = ['site_name', 'site_tagline', 'logo_preview', 'updated']
+    list_display = ['site_name', 'site_tagline', 'logo_preview', 'favicon_preview', 'updated']
     search_fields = ['site_name', 'site_tagline']
 
     def logo_preview(self, obj):
@@ -1010,6 +1024,12 @@ class SiteLogoAdmin(admin.ModelAdmin):
         return ''
     logo_preview.short_description = 'Logo'
 
+    def favicon_preview(self, obj):
+        if obj.favicon:
+            return format_html('<img src="{}" height="24" style="border-radius:2px;object-fit:contain;" />', obj.favicon.url)
+        return ''
+    favicon_preview.short_description = 'Favicon'
+
     def has_add_permission(self, request): return not SiteLogo.objects.exists()
 
     def get_fieldsets(self, request, obj=None):
@@ -1017,7 +1037,8 @@ class SiteLogoAdmin(admin.ModelAdmin):
             return super().get_fieldsets(request, obj)
         return [
             ('Site Identity', {'fields': ['site_name', 'site_tagline']}),
-            ('Branding', {'fields': ['logo']}),
+            ('Branding', {'fields': ['logo', 'favicon']}),
+            ('Theme', {'fields': ['site_theme', 'site_primary_color', 'site_secondary_color'], 'classes': ['collapse']}),
             ('Checkout Settings', {'fields': ['partner_delivery_enabled']}),
         ]
 

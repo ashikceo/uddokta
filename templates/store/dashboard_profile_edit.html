@@ -43,6 +43,16 @@
                     <textarea name="description" class="form-control">{{ partner.description }}</textarea>
                 </div>
                 <div class="form-group">
+                    <label>Store Theme</label>
+                    <select name="theme" class="form-control">
+                        <option value="" {% if not partner.theme %}selected{% endif %}>Use Site Default</option>
+                        {% for key, label in THEME_CHOICES %}
+                        <option value="{{ key }}" {% if partner.theme == key %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <p style="color:#888; font-size:11px; margin-top:5px;">Choose a color theme for your store. Select "Use Site Default" to inherit the site-wide theme.</p>
+                </div>
+                <div class="form-group">
                     <label>Shop Style</label>
                     <select name="shop_style" class="form-control">
                         <option value="general" {% if partner.shop_style == 'general' %}selected{% endif %}>General Shop</option>
